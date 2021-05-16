@@ -16,6 +16,8 @@
 
 namespace bustub {
 
+;
+
 /**
  * Replacer is an abstract class that tracks page usage.
  */

@@ -23,7 +23,11 @@ template <typename T>
 class Matrix {
  protected:
   // TODO(P0): Add implementation
-  Matrix(int r, int c) {}
+  Matrix(int r, int c) {
+    linear = new T[r * c];
+    rows = r;
+    cols = c;
+  }
 
   // # of rows in the matrix
   int rows;
@@ -51,32 +55,50 @@ class Matrix {
   virtual void MatImport(T *arr) = 0;
 
   // TODO(P0): Add implementation
-  virtual ~Matrix() = default;
+  virtual ~Matrix() { delete this->linear; }
 };
 
 template <typename T>
 class RowMatrix : public Matrix<T> {
  public:
   // TODO(P0): Add implementation
-  RowMatrix(int r, int c) : Matrix<T>(r, c) {}
+  RowMatrix(int r, int c) : Matrix<T>(r, c) {
+    //    Matrix<T>(r, c);
+    data_ = new T *[r];
+    for (int i = 0; i < r; i++) {
+      data_[i] = &(this->linear[i * c]);
+    }
+  }
 
   // TODO(P0): Add implementation
-  int GetRows() override { return 0; }
+  int GetRows() override { return this->rows; }
 
   // TODO(P0): Add implementation
-  int GetColumns() override { return 0; }
+  int GetColumns() override { return this->cols; }
 
   // TODO(P0): Add implementation
   T GetElem(int i, int j) override { return data_[i][j]; }
 
   // TODO(P0): Add implementation
-  void SetElem(int i, int j, T val) override {}
+  void SetElem(int i, int j, T val) override { data_[i][j] = val; }
 
   // TODO(P0): Add implementation
-  void MatImport(T *arr) override {}
+  void MatImport(T *arr) override {
+    int i = 0;
+    for (int r = 0; r < this->rows; r++) {
+      for (int c = 0; c < this->cols; c++) {
+        SetElem(r, c, arr[i]);
+        i += 1;
+      }
+    }
+  }
 
   // TODO(P0): Add implementation
-  ~RowMatrix() override = default;
+  ~RowMatrix() override {
+    //        for (int i = 0; i < this->rows; i++) {
+    delete this->data_;
+    //        }
+  }
 
  private:
   // 2D array containing the elements of the matrix in row-major format
@@ -95,16 +117,43 @@ class RowMatrixOperations {
                                                    std::unique_ptr<RowMatrix<T>> mat2) {
     // TODO(P0): Add code
 
-    return std::unique_ptr<RowMatrix<T>>(nullptr);
+    //    auto p =mat1.get();
+    //    p->GetRows();
+    if (mat1->GetRows() != mat2->GetRows() || mat1->GetColumns() != mat2->GetColumns()) {
+      return std::unique_ptr<RowMatrix<T>>(nullptr);
+    }
+    int rows = mat1->GetRows();
+    int cols = mat1->GetColumns();
+    auto res = std::make_unique<RowMatrix<T>>(rows, cols);
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        res->SetElem(r, c, mat1->GetElem(r, c) + mat2->GetElem(r, c));
+      }
+    }
+    return res;
   }
 
   // Compute matrix multiplication (mat1 * mat2) and return the result.
   // Return nullptr if dimensions mismatch for input matrices.
   static std::unique_ptr<RowMatrix<T>> MultiplyMatrices(std::unique_ptr<RowMatrix<T>> mat1,
                                                         std::unique_ptr<RowMatrix<T>> mat2) {
-    // TODO(P0): Add code
-
-    return std::unique_ptr<RowMatrix<T>>(nullptr);
+    if (mat1->GetRows() != mat2->GetColumns() || mat1->GetColumns() != mat2->GetRows()) {
+      return std::unique_ptr<RowMatrix<T>>(nullptr);
+    }
+    int rows = mat1->GetRows();
+    int cols = mat2->GetColumns();
+    //    int inner = mat1->GetCoilumns();
+    auto res = std::make_unique<RowMatrix<T>>(rows, cols);
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        int tmp = 0;
+        for (int i = 0; i < mat1->GetColumns(); i++) {
+          tmp += mat1->GetElem(r, i) * mat2->GetElem(i, c);
+        }
+        res->SetElem(r, c, tmp);
+      }
+    }
+    return res;
   }
 
   // Simplified GEMM (general matrix multiply) operation
@@ -113,8 +162,13 @@ class RowMatrixOperations {
                                                     std::unique_ptr<RowMatrix<T>> matB,
                                                     std::unique_ptr<RowMatrix<T>> matC) {
     // TODO(P0): Add code
+    auto mul = MultiplyMatrices(matA, matB);
+    if (mul.get() == nullptr) {
+      return mul;
+    }
+    return AddMatrices(mul, matC);
 
-    return std::unique_ptr<RowMatrix<T>>(nullptr);
+    //    return std::unique_ptr<RowMatrix<T>>(nullptr);
   }
 };
 }  // namespace bustub

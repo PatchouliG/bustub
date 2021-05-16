@@ -20,6 +20,20 @@
 #include "common/config.h"
 
 namespace bustub {
+class FrameInfo {
+ public:
+  FrameInfo(frame_id_t frameId);
+  //  bool isPinded() const;
+  //  void setIsPinded(bool isPinded);
+  bool isClockFlag() const;
+  void setClockFlag(bool clockFlag);
+  frame_id_t getFrameId() const;
+
+ private:
+  //  bool is_pinded;
+  bool clock_flag;
+  frame_id_t frame_id;
+};
 
 /**
  * LRUReplacer implements the lru replacement policy, which approximates the Least Recently Used policy.
@@ -46,6 +60,17 @@ class LRUReplacer : public Replacer {
   size_t Size() override;
 
  private:
+  void UnLock();
+  void Lock();
+  bool ClockVictim(frame_id_t *frame_id);
+  void EraseAt(size_t position);
+  std::vector<FrameInfo>::iterator FindByFrameID(frame_id_t f);
+
+  std::vector<FrameInfo> frame_infos;
+  std::mutex mutex;
+  size_t max_size;
+
+  size_t next_check_position;
   // TODO(student): implement me!
 };
 
