@@ -27,8 +27,7 @@ The following instructions will create a private BusTub that you can use for you
    ```
    $ cd ..
    $ rm -rv public-bustub
-   ```
-4. Clone your own private repo on:
+   ```b_plus_tree_page:
    ```
    $ git clone git@github.com:student/private-bustub.git
    ```

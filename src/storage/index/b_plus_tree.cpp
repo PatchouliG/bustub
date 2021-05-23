@@ -56,7 +56,29 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
  * keys return false, otherwise return true.
  */
 INDEX_TEMPLATE_ARGUMENTS
-bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transaction *transaction) { return false; }
+bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transaction *transaction) {
+//  todo
+//  auto *p = buffer_pool_manager_->FetchPage(root_page_id_);
+//  auto *currentNode = reinterpret_cast<BPlusTreePage *>(p->GetData());
+//  while (true) {
+//    if (currentNode->IsRootPage()) {
+//      auto *n = reinterpret_cast<BPlusTreeInternalPage<KeyType, ValueType, KeyComparator> *>(p->GetData());
+//      auto rid = n->Lookup(key, comparator_);
+//      page_id_t page_id = rid.GetPageId();
+//      currentNode = reinterpret_cast<BPlusTreePage *>(buffer_pool_manager_->FetchPage(page_id)->GetData());
+//    } else {
+//      auto *r = reinterpret_cast<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *>(currentNode);
+//      r->Insert(key, value, comparator_);
+//      if (r->GetSize() <= r->GetMaxSize()) {
+//        break;
+//      }
+//
+//      //      todo
+//      break;
+//    }
+//  }
+  return false;
+}
 /*
  * Insert constant key & value pair into an empty tree
  * User needs to first ask for new page from buffer pool manager(NOTICE: throw

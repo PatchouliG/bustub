@@ -25,7 +25,12 @@ namespace bustub {
  * max page size
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id, int max_size) {}
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id, int max_size) {
+  SetPageId(page_id);
+  SetParentPageId(parent_id);
+  SetMaxSize(max_size);
+  //  array=
+}
 /*
  * Helper method to get/set the key associated with input "index"(a.k.a
  * array offset)
@@ -33,26 +38,34 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id
 INDEX_TEMPLATE_ARGUMENTS
 KeyType B_PLUS_TREE_INTERNAL_PAGE_TYPE::KeyAt(int index) const {
   // replace with your own code
-  KeyType key{};
-  return key;
+  assert(index != 0 && index < GetSize());
+  return array[index].first;
 }
 
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) {}
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) { array[index].first = key; }
 
 /*
  * Helper method to find and return array index(or offset), so that its value
  * equals to input "value"
  */
 INDEX_TEMPLATE_ARGUMENTS
-int B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueIndex(const ValueType &value) const { return 0; }
+int B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueIndex(const ValueType &value) const {
+  for (auto it = array.begin(); it != array.end(); it++) {
+    if (it->second == value) {
+      return it - array.begin();
+    }
+  }
+  //  not found
+  assert(false);
+}
 
 /*
  * Helper method to get the value associated with input "index"(a.k.a array
  * offset)
  */
 INDEX_TEMPLATE_ARGUMENTS
-ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const { return 0; }
+ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const { return array[index].second; }
 
 /*****************************************************************************
  * LOOKUP
@@ -64,6 +77,11 @@ ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const { return 0; }
  */
 INDEX_TEMPLATE_ARGUMENTS
 ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::Lookup(const KeyType &key, const KeyComparator &comparator) const {
+  for (size_t i = 1; i < array.size(); ++i) {
+    if (comparator(array[i].first, key) == 0) {
+      return array[i].second;
+    }
+  }
   return INVALID_PAGE_ID;
 }
 
@@ -78,7 +96,9 @@ ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::Lookup(const KeyType &key, const KeyCo
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::PopulateNewRoot(const ValueType &old_value, const KeyType &new_key,
-                                                     const ValueType &new_value) {}
+                                                     const ValueType &new_value) {
+  //  todo
+}
 /*
  * Insert new_key & new_value pair right after the pair with its value ==
  * old_value
@@ -87,7 +107,15 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::PopulateNewRoot(const ValueType &old_value,
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertNodeAfter(const ValueType &old_value, const KeyType &new_key,
                                                     const ValueType &new_value) {
-  return 0;
+  for (auto it = array.begin(); it != array.end(); ++it) {
+    if (it->second == old_value) {
+      array.insert(it, MappingType(new_key, new_value));
+      SetSize(GetSize() + 1);
+      return GetSize();
+    }
+  }
+  //  not found
+  assert(false);
 }
 
 /*****************************************************************************
@@ -98,7 +126,18 @@ int B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertNodeAfter(const ValueType &old_value, 
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveHalfTo(BPlusTreeInternalPage *recipient,
-                                                BufferPoolManager *buffer_pool_manager) {}
+                                                BufferPoolManager *buffer_pool_manager) {
+//  page_id_t page_id;
+//  auto *page = buffer_pool_manager->NewPage(&page_id);
+//  auto *a = new BPlusTreeInternalPage();
+//  a->Init(page_id, GetParentPageId(), GetMaxSize());
+//  recipient = a;
+//  int s = std::distance(array.begin(), array.end());
+//  for (auto it = array.begin(); std::distance(array.begin(), it) <= int(array.size()) / 2; it++) {
+//    recipient->InsertNodeAfter()
+//
+//  }
+}
 
 /* Copy entries into me, starting from {items} and copy {size} entries.
  * Since it is an internal page, for all entries (pages) moved, their parents page now changes to me.
@@ -177,6 +216,8 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveLastToFrontOf(BPlusTreeInternalPage *re
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::CopyFirstFrom(const MappingType &pair, BufferPoolManager *buffer_pool_manager) {}
+template <typename KeyType, typename ValueType, typename KeyComparator>
+BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::BPlusTreeInternalPage() {}
 
 // valuetype for internalNode should be page id_t
 template class BPlusTreeInternalPage<GenericKey<4>, page_id_t, GenericComparator<4>>;
@@ -184,4 +225,30 @@ template class BPlusTreeInternalPage<GenericKey<8>, page_id_t, GenericComparator
 template class BPlusTreeInternalPage<GenericKey<16>, page_id_t, GenericComparator<16>>;
 template class BPlusTreeInternalPage<GenericKey<32>, page_id_t, GenericComparator<32>>;
 template class BPlusTreeInternalPage<GenericKey<64>, page_id_t, GenericComparator<64>>;
+
+// template <typename KeyType, typename ValueType, typename KeyComparator>
+// int BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::getPositionGTKey(const KeyType &keyType) const {
+//  if (GetSize() == 0) {
+//    return -1;
+//  }
+//  for (auto i = 0; i < GetSize(); ++i) {
+//    if (array[i].first >= keyType) {
+//      return i;
+//    }
+//  }
+//  return -1;
+//}
+// template <typename KeyType, typename ValueType, typename KeyComparator>
+// int BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::getPositionGTValue(const ValueType &valueType) const {
+//  if (GetSize() == 0) {
+//    return -1;
+//  }
+//  for (auto i = 0; i < GetSize(); ++i) {
+//    if (array[i].second >= valueType) {
+//      return i;
+//    }
+//  }
+//  return -1;
+//}
+
 }  // namespace bustub
