@@ -29,7 +29,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id
   SetPageId(page_id);
   SetParentPageId(parent_id);
   SetMaxSize(max_size);
-  //  array=
+  SetSize(0);
 }
 /*
  * Helper method to get/set the key associated with input "index"(a.k.a
@@ -38,26 +38,31 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id
 INDEX_TEMPLATE_ARGUMENTS
 KeyType B_PLUS_TREE_INTERNAL_PAGE_TYPE::KeyAt(int index) const {
   // replace with your own code
-  assert(index != 0 && index < GetSize());
+  //  first key is invalid
+  //  need test todo
   return array[index].first;
 }
 
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) { array[index].first = key; }
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) {
+  //  need test todo
+  array[index].first = key;
+}
 
 /*
  * Helper method to find and return array index(or offset), so that its value
  * equals to input "value"
  */
+// return -1 if not found
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueIndex(const ValueType &value) const {
-  for (auto it = array.begin(); it != array.end(); it++) {
-    if (it->second == value) {
-      return it - array.begin();
+  //  todo need test
+  for (auto i = 1; i < GetSize(); ++i) {
+    if (array[i].second == value) {
+      return i;
     }
   }
-  //  not found
-  assert(false);
+  return -1;
 }
 
 /*
@@ -65,7 +70,10 @@ int B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueIndex(const ValueType &value) const {
  * offset)
  */
 INDEX_TEMPLATE_ARGUMENTS
-ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const { return array[index].second; }
+ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const {
+  //  todo need test
+  return array[index].second;
+}
 
 /*****************************************************************************
  * LOOKUP
@@ -77,12 +85,13 @@ ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const { return arra
  */
 INDEX_TEMPLATE_ARGUMENTS
 ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::Lookup(const KeyType &key, const KeyComparator &comparator) const {
-  for (size_t i = 1; i < array.size(); ++i) {
-    if (comparator(array[i].first, key) == 0) {
-      return array[i].second;
+  //  todo need test
+  for (auto i = 1; i < GetSize(); ++i) {
+    if (comparator(array[i].first, key) >= 0) {
+      return array[i - 1].second;
     }
   }
-  return INVALID_PAGE_ID;
+  return array[GetSize()].second;
 }
 
 /*****************************************************************************
@@ -94,10 +103,14 @@ ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::Lookup(const KeyType &key, const KeyCo
  * page, you should create a new root page and populate its elements.
  * NOTE: This method is only called within InsertIntoParent()(b_plus_tree.cpp)
  */
+// notice: new_value > new_key > old_value
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::PopulateNewRoot(const ValueType &old_value, const KeyType &new_key,
                                                      const ValueType &new_value) {
-  //  todo
+  array[1] = std::pair<KeyType, ValueType>(new_key, new_value);
+  //  first key is invalid
+  array[0] = std::pair<KeyType, ValueType>(KeyType(), old_value);
+  SetSize(2);
 }
 /*
  * Insert new_key & new_value pair right after the pair with its value ==
@@ -107,15 +120,13 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::PopulateNewRoot(const ValueType &old_value,
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertNodeAfter(const ValueType &old_value, const KeyType &new_key,
                                                     const ValueType &new_value) {
-  for (auto it = array.begin(); it != array.end(); ++it) {
-    if (it->second == old_value) {
-      array.insert(it, MappingType(new_key, new_value));
-      SetSize(GetSize() + 1);
-      return GetSize();
-    }
-  }
-  //  not found
-  assert(false);
+  //  need test
+  auto position = ValueIndex(old_value);
+  assert(position != -1);
+  memmove(array + position + 2, array + position + 1, sizeof(MappingType) * (GetSize() - position));
+  array[position + 1] = std::make_pair(new_key, new_value);
+  SetSize(GetSize() + 1);
+  return GetSize();
 }
 
 /*****************************************************************************
@@ -124,19 +135,15 @@ int B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertNodeAfter(const ValueType &old_value, 
 /*
  * Remove half of key & value pairs from this page to "recipient" page
  */
+// move right half
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveHalfTo(BPlusTreeInternalPage *recipient,
                                                 BufferPoolManager *buffer_pool_manager) {
-//  page_id_t page_id;
-//  auto *page = buffer_pool_manager->NewPage(&page_id);
-//  auto *a = new BPlusTreeInternalPage();
-//  a->Init(page_id, GetParentPageId(), GetMaxSize());
-//  recipient = a;
-//  int s = std::distance(array.begin(), array.end());
-//  for (auto it = array.begin(); std::distance(array.begin(), it) <= int(array.size()) / 2; it++) {
-//    recipient->InsertNodeAfter()
-//
-//  }
+  //  page_id_t pageId;
+  //  Page *page = buffer_pool_manager->NewPage(&pageId);
+  //  recipient = (BPlusTreeInternalPage *)(page->GetData());
+  //  auto move_position = GetSize() / 2;
+  //    todo
 }
 
 /* Copy entries into me, starting from {items} and copy {size} entries.
@@ -216,8 +223,6 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveLastToFrontOf(BPlusTreeInternalPage *re
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::CopyFirstFrom(const MappingType &pair, BufferPoolManager *buffer_pool_manager) {}
-template <typename KeyType, typename ValueType, typename KeyComparator>
-BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::BPlusTreeInternalPage() {}
 
 // valuetype for internalNode should be page id_t
 template class BPlusTreeInternalPage<GenericKey<4>, page_id_t, GenericComparator<4>>;
@@ -225,30 +230,4 @@ template class BPlusTreeInternalPage<GenericKey<8>, page_id_t, GenericComparator
 template class BPlusTreeInternalPage<GenericKey<16>, page_id_t, GenericComparator<16>>;
 template class BPlusTreeInternalPage<GenericKey<32>, page_id_t, GenericComparator<32>>;
 template class BPlusTreeInternalPage<GenericKey<64>, page_id_t, GenericComparator<64>>;
-
-// template <typename KeyType, typename ValueType, typename KeyComparator>
-// int BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::getPositionGTKey(const KeyType &keyType) const {
-//  if (GetSize() == 0) {
-//    return -1;
-//  }
-//  for (auto i = 0; i < GetSize(); ++i) {
-//    if (array[i].first >= keyType) {
-//      return i;
-//    }
-//  }
-//  return -1;
-//}
-// template <typename KeyType, typename ValueType, typename KeyComparator>
-// int BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::getPositionGTValue(const ValueType &valueType) const {
-//  if (GetSize() == 0) {
-//    return -1;
-//  }
-//  for (auto i = 0; i < GetSize(); ++i) {
-//    if (array[i].second >= valueType) {
-//      return i;
-//    }
-//  }
-//  return -1;
-//}
-
 }  // namespace bustub

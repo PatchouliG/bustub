@@ -35,8 +35,6 @@ namespace bustub {
 INDEX_TEMPLATE_ARGUMENTS
 class BPlusTreeInternalPage : public BPlusTreePage {
  public:
-  BPlusTreeInternalPage();
-
   // must call initialize method after "create" a new node
   void Init(page_id_t page_id, page_id_t parent_id = INVALID_PAGE_ID, int max_size = INTERNAL_PAGE_SIZE);
 
@@ -67,7 +65,6 @@ class BPlusTreeInternalPage : public BPlusTreePage {
 //  -1 not found
 //  int getPositionGTKey(const KeyType &keyType) const;
 //  int getPositionGTValue(const ValueType &valueType) const ;
-  std::vector<MappingType> array;
-//  MappingType array[0];
+  MappingType array[0];
 };
 }  // namespace bustub

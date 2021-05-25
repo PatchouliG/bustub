@@ -43,8 +43,8 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
     frame_id = res->second;
     replacer_->Pin(frame_id);
     auto *p = pages_ + frame_id;
-    assert(p->pin_count_ == 0);
-    p->pin_count_ = 1;
+    //    assert(p->pin_count_ == 0);
+    p->pin_count_ += 1;
     return p;
   }
   // 1.2    If P does not exist, find a replacement page (R) from either the free list or the replacer.
@@ -86,9 +86,9 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
   if (page->GetPinCount() <= 0) {
     return false;
   }
-  assert(page->pin_count_ == 1);
-  page->pin_count_ = 0;
-  page->is_dirty_ = is_dirty;
+  assert(page->pin_count_ > 0);
+  page->pin_count_ -= 1;
+  page->is_dirty_ |= is_dirty;
   replacer_->Unpin(res->second);
   return true;
 }

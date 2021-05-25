@@ -11,22 +11,15 @@
 #include "storage/index/b_plus_tree.h"
 
 namespace bustub {
-template <typename T>
-T foo(T a, T b) {
-  return a - b;
-}
 
 TEST(BPlusTreeTests, test_init) {
   void *page = malloc(1024);
-  auto *leaf_node = (BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *)(page);
+  auto *leaf_node = static_cast<BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *>(page);
   leaf_node->Init(1, 2, 3);
   EXPECT_EQ(leaf_node->GetParentPageId(), 2);
   EXPECT_EQ(leaf_node->GetPageId(), 1);
   EXPECT_EQ(leaf_node->GetMaxSize(), 3);
   EXPECT_EQ(leaf_node->GetSize(), 0);
-  //  auto key = GenericKey<64>();
-  //  Schema *key_schema = ParseCreateStatement("a bigint");
-  //  leaf_node->KeyIndex(key, GenericComparator<64>(key_schema));
 }  // namespace bustub
 TEST(BPlusTreeTests, test_insert) {
   void *page = malloc(1024);

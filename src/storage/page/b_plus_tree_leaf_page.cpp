@@ -109,7 +109,13 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &valu
  * Remove half of key & value pairs from this page to "recipient" page
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(BPlusTreeLeafPage *recipient) {}
+void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(BPlusTreeLeafPage *recipient) {
+  auto position = GetSize() / 2;
+  auto move_number = GetSize() - position ;
+  std::memcpy(recipient->array, array + position, sizeof(MappingType) * (move_number));
+  recipient->SetSize(move_number);
+  SetSize(position);
+}
 
 /*
  * Copy starting from items, and copy {size} number of elements into me.

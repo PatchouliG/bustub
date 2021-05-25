@@ -41,11 +41,16 @@ std::string usageMessage() {
 }
 
 // Remove 'DISABLED_' when you are ready
-TEST(BptTreeTest, DISABLED_UnitTest) {
+TEST(BptTreeTest, UnitTest) {
   int64_t key = 0;
   GenericKey<8> index_key;
   RID rid;
   std::string filename;
+
+  std::ifstream in("/Users/wn/code/bustub/tmp");
+//  std::streambuf *cinbuf = std::cin.rdbuf(); //save old buf
+  std::cin.rdbuf(in.rdbuf()); //redirect std::cin to in.txt!
+
   char instruction;
   bool quit = false;
   int leaf_max_size;
