@@ -63,96 +63,96 @@ bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   if (root_page_id_ == INVALID_PAGE_ID) {
     //     buffer_pool_manager_->FetchPage(root_page_id_);
     //        Page *p = buffer_pool_manager_->NewPage(&root_page_id_);
-    auto node_wrap = NodeWrapType(buffer_pool_manager_, IndexPageType::LEAF_PAGE, leaf_max_size_);
-//    node_wrap.toLeafPage();
+    createRoot();
+    //    node_wrap.toLeafPage();
     //        reinterpret_cast<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *>(p)->Init(root_page_id_);
     //    buffer_pool_manager_->UnpinPage(root_page_id_, false);
   }
 
-  auto stack = std::vector<BPlusTreePage *>();
-  auto *current_page = buffer_pool_manager_->FetchPage(root_page_id_);
-
-  while (true) {
-    //    handle non leaf page
-    current_page->WLatch();
-    auto *current_node = reinterpret_cast<BPlusTreePage *>(current_page->GetData());
-    stack.push_back(current_node);
-    if (!current_node->IsLeafPage()) {
-      auto *internal_node =
-          reinterpret_cast<BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *>(current_page->GetData());
-      page_id_t page_id = internal_node->Lookup(key, comparator_);
-      current_page = buffer_pool_manager_->FetchPage(page_id);
-      //      current_node = reinterpret_cast<BPlusTreePage *>(buffer_pool_manager_->FetchPage(page_id)->GetData());
-    } else {
-      auto *r = reinterpret_cast<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *>(current_node);
-      //      check if exits
-      auto check_res = r->KeyIndex(key, comparator_);
-      if (check_res != -1 && comparator_(r->KeyAt(check_res), key) == 0) {
-        return false;
-      }
-      r->Insert(key, value, comparator_);
-      break;
-    }
-  }
-  //  handle split
-  for (auto it = stack.rbegin(); it != stack.rend(); ++it) {
-    BPlusTreePage *node = *it;
-    auto size = node->GetSize();
-    bool is_dirty = false;
-    if (node->IsLeafPage()) {
-      is_dirty = true;
-      if (size > leaf_max_size_) {
-        auto *leaf_node = static_cast<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *>(node);
-        page_id_t new_page_id;
-        auto *page = buffer_pool_manager_->NewPage(&new_page_id);
-        auto *new_leaf = (BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *)(page->GetData());
-        new_leaf->Init(new_page_id);
-        leaf_node->MoveHalfTo(new_leaf);
-        leaf_node->SetNextPageId(new_page_id);
-
-        if (node->GetParentPageId() != INVALID_PAGE_ID) {
-          auto *parent = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>
-                              *)(buffer_pool_manager_->FetchPage(leaf_node->GetParentPageId())->GetData());
-          parent->InsertNodeAfter(leaf_node->GetPageId(), new_leaf->KeyAt(0), new_page_id);
-        } else {
-          page_id_t new_root_page_id;
-          auto *new_root_page = buffer_pool_manager_->NewPage(&new_root_page_id);
-          auto *new_root_node = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *)(new_root_page->GetData());
-          new_root_node->Init(new_root_page_id);
-          new_root_node->PopulateNewRoot(leaf_node->GetPageId(), new_leaf->KeyAt(0), new_page_id);
-
-          leaf_node->SetParentPageId(new_root_page_id);
-          new_leaf->SetParentPageId(new_root_page_id);
-
-          root_page_id_ = new_root_page_id;
-          buffer_pool_manager_->UnpinPage(new_root_page_id, true);
-        }
-        buffer_pool_manager_->UnpinPage(new_page_id, true);
-      }
-    } else if (size > internal_max_size_) {
-      is_dirty = true;
-      auto *internal_node = static_cast<BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *>(node);
-      page_id_t new_page_id;
-      auto *page = buffer_pool_manager_->NewPage(&new_page_id);
-      auto *new_internal_node = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *)(page->GetData());
-      internal_node->MoveHalfTo(new_internal_node, buffer_pool_manager_);
-      if (internal_node->GetParentPageId() != INVALID_PAGE_ID) {
-        auto *parent = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>
-                            *)(buffer_pool_manager_->FetchPage(internal_node->GetParentPageId())->GetData());
-        parent->InsertNodeAfter(internal_node->GetPageId(), new_internal_node->KeyAt(1), new_page_id);
-        buffer_pool_manager_->UnpinPage(new_page_id, true);
-        //
-      } else {
-        page_id_t new_root_page_id;
-        auto *new_root_page = buffer_pool_manager_->NewPage(&new_root_page_id);
-        auto *new_root_node = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *)(new_root_page->GetData());
-        new_root_node->PopulateNewRoot(internal_node->GetPageId(), new_internal_node->KeyAt(1), new_page_id);
-        root_page_id_ = new_page_id;
-      }
-    }
-    buffer_pool_manager_->FetchPage(node->GetPageId())->WUnlatch();
-    buffer_pool_manager_->UnpinPage(node->GetPageId(), is_dirty);
-  }
+  //  auto stack = std::vector<BPlusTreePage *>();
+  //  auto *current_page = buffer_pool_manager_->FetchPage(root_page_id_);
+  //
+  //  while (true) {
+  //    //    handle non leaf page
+  //    current_page->WLatch();
+  //    auto *current_node = reinterpret_cast<BPlusTreePage *>(current_page->GetData());
+  //    stack.push_back(current_node);
+  //    if (!current_node->IsLeafPage()) {
+  //      auto *internal_node =
+  //          reinterpret_cast<BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *>(current_page->GetData());
+  //      page_id_t page_id = internal_node->Lookup(key, comparator_);
+  //      current_page = buffer_pool_manager_->FetchPage(page_id);
+  //      //      current_node = reinterpret_cast<BPlusTreePage *>(buffer_pool_manager_->FetchPage(page_id)->GetData());
+  //    } else {
+  //      auto *r = reinterpret_cast<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *>(current_node);
+  //      //      check if exits
+  //      auto check_res = r->KeyIndex(key, comparator_);
+  //      if (check_res != -1 && comparator_(r->KeyAt(check_res), key) == 0) {
+  //        return false;
+  //      }
+  //      r->Insert(key, value, comparator_);
+  //      break;
+  //    }
+  //  }
+  //  //  handle split
+  //  for (auto it = stack.rbegin(); it != stack.rend(); ++it) {
+  //    BPlusTreePage *node = *it;
+  //    auto size = node->GetSize();
+  //    bool is_dirty = false;
+  //    if (node->IsLeafPage()) {
+  //      is_dirty = true;
+  //      if (size > leaf_max_size_) {
+  //        auto *leaf_node = static_cast<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *>(node);
+  //        page_id_t new_page_id;
+  //        auto *page = buffer_pool_manager_->NewPage(&new_page_id);
+  //        auto *new_leaf = (BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *)(page->GetData());
+  //        new_leaf->Init(new_page_id);
+  //        leaf_node->MoveHalfTo(new_leaf);
+  //        leaf_node->SetNextPageId(new_page_id);
+  //
+  //        if (node->GetParentPageId() != INVALID_PAGE_ID) {
+  //          auto *parent = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>
+  //                              *)(buffer_pool_manager_->FetchPage(leaf_node->GetParentPageId())->GetData());
+  //          parent->InsertNodeAfter(leaf_node->GetPageId(), new_leaf->KeyAt(0), new_page_id);
+  //        } else {
+  //          page_id_t new_root_page_id;
+  //          auto *new_root_page = buffer_pool_manager_->NewPage(&new_root_page_id);
+  //          auto *new_root_node = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>
+  //          *)(new_root_page->GetData()); new_root_node->Init(new_root_page_id);
+  //          new_root_node->PopulateNewRoot(leaf_node->GetPageId(), new_leaf->KeyAt(0), new_page_id);
+  //
+  //          leaf_node->SetParentPageId(new_root_page_id);
+  //          new_leaf->SetParentPageId(new_root_page_id);
+  //
+  //          root_page_id_ = new_root_page_id;
+  //          buffer_pool_manager_->UnpinPage(new_root_page_id, true);
+  //        }
+  //        buffer_pool_manager_->UnpinPage(new_page_id, true);
+  //      }
+  //    } else if (size > internal_max_size_) {
+  //      is_dirty = true;
+  //      auto *internal_node = static_cast<BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *>(node);
+  //      page_id_t new_page_id;
+  //      auto *page = buffer_pool_manager_->NewPage(&new_page_id);
+  //      auto *new_internal_node = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *)(page->GetData());
+  //      internal_node->MoveHalfTo(new_internal_node, buffer_pool_manager_);
+  //      if (internal_node->GetParentPageId() != INVALID_PAGE_ID) {
+  //        auto *parent = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>
+  //                            *)(buffer_pool_manager_->FetchPage(internal_node->GetParentPageId())->GetData());
+  //        parent->InsertNodeAfter(internal_node->GetPageId(), new_internal_node->KeyAt(1), new_page_id);
+  //        buffer_pool_manager_->UnpinPage(new_page_id, true);
+  //        //
+  //      } else {
+  //        page_id_t new_root_page_id;
+  //        auto *new_root_page = buffer_pool_manager_->NewPage(&new_root_page_id);
+  //        auto *new_root_node = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>
+  //        *)(new_root_page->GetData()); new_root_node->PopulateNewRoot(internal_node->GetPageId(),
+  //        new_internal_node->KeyAt(1), new_page_id); root_page_id_ = new_page_id;
+  //      }
+  //    }
+  //    buffer_pool_manager_->FetchPage(node->GetPageId())->WUnlatch();
+  //    buffer_pool_manager_->UnpinPage(node->GetPageId(), is_dirty);
+  //  }
   return true;
 }
 
@@ -497,5 +497,12 @@ template class BPlusTree<GenericKey<8>, RID, GenericComparator<8>>;
 template class BPlusTree<GenericKey<16>, RID, GenericComparator<16>>;
 template class BPlusTree<GenericKey<32>, RID, GenericComparator<32>>;
 template class BPlusTree<GenericKey<64>, RID, GenericComparator<64>>;
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::createRoot() {
+  auto node_wrap = NodeWrapType(buffer_pool_manager_, IndexPageType::LEAF_PAGE, leaf_max_size_);
+  root_page_id_ = node_wrap.getPageId();
+  UpdateRootPageId(1);
+}
 
 }  // namespace bustub
