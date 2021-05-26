@@ -10,35 +10,22 @@
 #include "buffer/buffer_pool_manager.h"
 
 namespace bustub {
-// class PageWrap {
-// public:
-//  PageWrap(page_id_t pageId, BufferPoolManager *bufferPoolManager)
-//      : pageId(pageId), bufferPoolManager(bufferPoolManager) {}
-//  virtual ~PageWrap() { bufferPoolManager->UnpinPage(pageId); }
-//
-// private:
-//  page_id_t pageId;
-//  Page *page;
-//  BufferPoolManager *bufferPoolManager;
-//};
 
 INDEX_TEMPLATE_ARGUMENTS
-class NodeWrap {
+class NodePageWrap {
   using LeafPage = BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>;
   using InternalPage = BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>;
 
  public:
-  //  NodeWrap(LeafPage *bPlusTreeLeafPage, BufferPoolManager *bufferPoolManager)
-  //      : node_page(bPlusTreeLeafPage), bufferPoolManager(bufferPoolManager) {}
-  NodeWrap(page_id_t pageId, BufferPoolManager *bufferPoolManager) : bufferPoolManager(bufferPoolManager) {
+  NodePageWrap(page_id_t pageId, BufferPoolManager *bufferPoolManager) : bufferPoolManager(bufferPoolManager) {
     page = bufferPoolManager->FetchPage(pageId);
     is_dirty = false;
     this->page_id = pageId;
     indexPageType = ((BPlusTreePage *)(page->GetData()))->GetPageType();
   }
   //  for new page
-  NodeWrap(BufferPoolManager *bufferPoolManager, IndexPageType indexPageType, int max_size,
-           page_id_t parent_id = INVALID_PAGE_ID)
+  NodePageWrap(BufferPoolManager *bufferPoolManager, IndexPageType indexPageType, int max_size,
+               page_id_t parent_id = INVALID_PAGE_ID)
       : bufferPoolManager(bufferPoolManager) {
     page = bufferPoolManager->NewPage(&page_id);
     is_dirty = true;
@@ -49,12 +36,16 @@ class NodeWrap {
       toInternalPage()->Init(page_id, parent_id, max_size);
     }
   }
-  virtual ~NodeWrap() { bufferPoolManager->UnpinPage(page_id, is_dirty); }
+  virtual ~NodePageWrap() { bufferPoolManager->UnpinPage(page_id, is_dirty); }
 
-  void setIsDirty() { NodeWrap::is_dirty = true; }
+  void setIsDirty() { NodePageWrap::is_dirty = true; }
   IndexPageType getIndexPageType() const { return indexPageType; }
   LeafPage *toLeafPage() const { return (LeafPage *)(page->GetData()); }
   InternalPage *toInternalPage() const { return (InternalPage *)(page->GetData()); }
+
+  page_id_t getPageId() const { return page_id; }
+//  test only
+  Page *getPage() const { return page; }
 
  private:
   Page *page;

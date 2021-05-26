@@ -38,7 +38,7 @@ INDEX_TEMPLATE_ARGUMENTS
 class BPlusTree {
   using InternalPage = BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>;
   using LeafPage = BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>;
-  using NodeWrapType = NodeWrap<KeyType, ValueType, KeyComparator>;
+  using NodeWrapType = NodePageWrap<KeyType, ValueType, KeyComparator>;
 
  public:
   explicit BPlusTree(std::string name, BufferPoolManager *buffer_pool_manager, const KeyComparator &comparator,
