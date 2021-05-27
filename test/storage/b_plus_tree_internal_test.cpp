@@ -11,39 +11,33 @@
 #include "storage/index/b_plus_tree.h"
 
 namespace bustub {
-// todo use nodeWrap
-BPlusTreeInternalPage<GenericKey<64>, page_id_t , GenericComparator<64>> *getNode() {
-  void *page = malloc(1024);
-  auto *node = (BPlusTreeInternalPage<GenericKey<64>, page_id_t , GenericComparator<64>> *)(page);
-  node->Init(1, 2, 3);
-  return node;
-}
+
+Schema *key_schema = ParseCreateStatement("a bigint");
+GenericComparator<64> comparator(key_schema);
+
+DiskManager *disk_manager = new DiskManager("test.db");
+BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
 
 TEST(BPlusTreeTests, test_init) {
-  auto *node = getNode();
-  node->Init(1, 2, 3);
-  EXPECT_EQ(node->GetParentPageId(), 2);
-  EXPECT_EQ(node->GetPageId(), 1);
+  auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 3);
+  auto node = nodeWrap.toInternalPage();
+  EXPECT_EQ(node->GetPageId(), 0);
   EXPECT_EQ(node->GetMaxSize(), 3);
   EXPECT_EQ(node->GetSize(), 0);
 }
-// namespace bustub
 
-// todo
-TEST(BPlusTreeTests, test_todo) {
-  void *page = malloc(1024);
-  auto *internal_node = (BPlusTreeInternalPage<GenericKey<64>, page_id_t , GenericComparator<64>> *)(page);
-  internal_node->Init(1, 2, 3);
+TEST(BPlusTreeTests, test_populateNewRoot) {
+  auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
+  auto internal_node = nodeWrap.toInternalPage();
 
   auto key = GenericKey<64>();
   key.SetFromInteger(1);
 
   internal_node->PopulateNewRoot(1, key, 2);
 
-  EXPECT_EQ(internal_node->GetParentPageId(), 2);
-  EXPECT_EQ(internal_node->GetPageId(), 1);
-  EXPECT_EQ(internal_node->GetMaxSize(), 3);
-  EXPECT_EQ(internal_node->GetSize(), 1);
-}  // namespace bustub
+  EXPECT_EQ(internal_node->GetParentPageId(), -1);
+  EXPECT_EQ(internal_node->GetMaxSize(), 10);
+  EXPECT_EQ(internal_node->GetSize(), 2);
+}
 
 }  // namespace bustub

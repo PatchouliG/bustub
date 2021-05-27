@@ -20,17 +20,21 @@ DiskManager *disk_manager = new DiskManager("test.db");
 BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
 
 TEST(BPlusTreeTests, test_init) {
-  void *page = malloc(1024);
-  auto *leaf_node = static_cast<BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *>(page);
-  leaf_node->Init(1, 2, 3);
-  EXPECT_EQ(leaf_node->GetParentPageId(), 2);
-  EXPECT_EQ(leaf_node->GetPageId(), 1);
-  EXPECT_EQ(leaf_node->GetMaxSize(), 3);
+//  void *page = malloc(1024);
+//  auto *leaf_node = static_cast<BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *>(page);
+//  leaf_node->Init(1, 2, 3);
+  auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
+  auto *leaf_node = nodeWrap.toLeafPage();
+  EXPECT_EQ(leaf_node->GetPageId(), 0);
+  EXPECT_EQ(leaf_node->GetMaxSize(), 10);
   EXPECT_EQ(leaf_node->GetSize(), 0);
 }  // namespace bustub
 TEST(BPlusTreeTests, test_insert) {
-  void *page = malloc(1024);
-  auto *leaf_node = (BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *)(page);
+  auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
+  auto *leaf_node = nodeWrap.toLeafPage();
+//  auto *leaf_node = nodeWrap.toLeafPage();
+//  void *page = malloc(1024);
+//  auto *leaf_node = (BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *)(page);
   leaf_node->Init(1, 2, 100);
   auto key = GenericKey<64>();
   //  Schema *key_schema = ParseCreateStatement("a bigint");
