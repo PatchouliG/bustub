@@ -41,15 +41,17 @@ std::string usageMessage() {
 }
 
 // Remove 'DISABLED_' when you are ready
-TEST(BptTreeTest, DISABLED_UNITTEST) {
+TEST(BptTreeTest, UNITTEST) {
   int64_t key = 0;
   GenericKey<8> index_key;
   RID rid;
   std::string filename;
 
-  std::ifstream in("/Users/wn/code/bustub/tmp");
-//  std::streambuf *cinbuf = std::cin.rdbuf(); //save old buf
-  std::cin.rdbuf(in.rdbuf()); //redirect std::cin to in.txt!
+  std::ifstream in("/Users/ning.wang/code/bustub/tmp");
+//  todo use file save output
+//  freopen("/Users/ning.wang/code/bustub/output", "w", stdout);
+
+  std::cin.rdbuf(in.rdbuf());  // redirect std::cin to in.txt!
 
   char instruction;
   bool quit = false;

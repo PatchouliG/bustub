@@ -19,6 +19,7 @@ class NodePageWrap {
  public:
   NodePageWrap(page_id_t pageId, BufferPoolManager *bufferPoolManager) : bufferPoolManager(bufferPoolManager) {
     page = bufferPoolManager->FetchPage(pageId);
+    assert(page != nullptr);
     is_dirty = false;
     this->page_id = pageId;
     indexPageType = ((BPlusTreePage *)(page->GetData()))->GetPageType();
@@ -47,12 +48,20 @@ class NodePageWrap {
         bufferPoolManager(nodePageWrap.bufferPoolManager) {
     page = bufferPoolManager->FetchPage(page_id);
   }
-  virtual ~NodePageWrap() { bufferPoolManager->UnpinPage(page_id, is_dirty); }
+  virtual ~NodePageWrap() {
+    bufferPoolManager->UnpinPage(page_id, is_dirty);
+  }
 
   void setIsDirty() { NodePageWrap::is_dirty = true; }
   IndexPageType getIndexPageType() const { return indexPageType; }
-  LeafPage *toLeafPage() const { return (LeafPage *)(page->GetData()); }
-  InternalPage *toInternalPage() const { return (InternalPage *)(page->GetData()); }
+  LeafPage *toLeafPage() const {
+    assert(getIndexPageType() == IndexPageType::LEAF_PAGE);
+    return (LeafPage *)(page->GetData());
+  }
+  InternalPage *toInternalPage() const {
+    assert(getIndexPageType() == IndexPageType::INTERNAL_PAGE);
+    return (InternalPage *)(page->GetData());
+  }
   BPlusTreePage *toBPlusTreePage() const { return (BPlusTreePage *)(page->GetData()); }
 
   page_id_t getPageId() const { return page_id; }

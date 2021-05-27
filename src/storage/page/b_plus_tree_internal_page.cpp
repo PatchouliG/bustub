@@ -92,7 +92,7 @@ ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::Lookup(const KeyType &key, const KeyCo
       return array[i - 1].second;
     }
   }
-  return array[GetSize()].second;
+  return array[GetSize() - 1].second;
 }
 
 /*****************************************************************************
@@ -140,10 +140,15 @@ int B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertNodeAfter(const ValueType &old_value, 
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveHalfTo(BPlusTreeInternalPage *recipient,
                                                 BufferPoolManager *buffer_pool_manager) {
-  //  page_id_t pageId;
-  //  Page *page = buffer_pool_manager->NewPage(&pageId);
-  //  recipient = (BPlusTreeInternalPage *)(page->GetData());
-  //  auto move_position = GetSize() / 2;
+  auto position = GetSize() / 2;
+  auto move_number = GetSize() - position;
+  std::memcpy(recipient->array, array + position, sizeof(MappingType) * (move_number));
+  recipient->SetSize(move_number);
+  SetSize(position);
+  //    page_id_t pageId;
+  //    Page *page = buffer_pool_manager->NewPage(&pageId);
+  //    recipient = (BPlusTreeInternalPage *)(page->GetData());
+  //    auto move_position = GetSize() / 2;
   //    todo
 }
 
