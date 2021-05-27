@@ -11,6 +11,7 @@
 #include "storage/index/b_plus_tree.h"
 
 namespace bustub {
+// todo use nodeWrap
 BPlusTreeInternalPage<GenericKey<64>, page_id_t , GenericComparator<64>> *getNode() {
   void *page = malloc(1024);
   auto *node = (BPlusTreeInternalPage<GenericKey<64>, page_id_t , GenericComparator<64>> *)(page);

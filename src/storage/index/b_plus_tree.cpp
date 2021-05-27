@@ -61,98 +61,62 @@ INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transaction *transaction) {
   //  create root if is invalid
   if (root_page_id_ == INVALID_PAGE_ID) {
-    //     buffer_pool_manager_->FetchPage(root_page_id_);
-    //        Page *p = buffer_pool_manager_->NewPage(&root_page_id_);
     createRoot();
-    //    node_wrap.toLeafPage();
-    //        reinterpret_cast<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *>(p)->Init(root_page_id_);
-    //    buffer_pool_manager_->UnpinPage(root_page_id_, false);
   }
 
-  //  auto stack = std::vector<BPlusTreePage *>();
-  //  auto *current_page = buffer_pool_manager_->FetchPage(root_page_id_);
-  //
-  //  while (true) {
-  //    //    handle non leaf page
-  //    current_page->WLatch();
-  //    auto *current_node = reinterpret_cast<BPlusTreePage *>(current_page->GetData());
-  //    stack.push_back(current_node);
-  //    if (!current_node->IsLeafPage()) {
-  //      auto *internal_node =
-  //          reinterpret_cast<BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *>(current_page->GetData());
-  //      page_id_t page_id = internal_node->Lookup(key, comparator_);
-  //      current_page = buffer_pool_manager_->FetchPage(page_id);
-  //      //      current_node = reinterpret_cast<BPlusTreePage *>(buffer_pool_manager_->FetchPage(page_id)->GetData());
-  //    } else {
-  //      auto *r = reinterpret_cast<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *>(current_node);
-  //      //      check if exits
-  //      auto check_res = r->KeyIndex(key, comparator_);
-  //      if (check_res != -1 && comparator_(r->KeyAt(check_res), key) == 0) {
-  //        return false;
-  //      }
-  //      r->Insert(key, value, comparator_);
-  //      break;
-  //    }
-  //  }
-  //  //  handle split
-  //  for (auto it = stack.rbegin(); it != stack.rend(); ++it) {
-  //    BPlusTreePage *node = *it;
-  //    auto size = node->GetSize();
-  //    bool is_dirty = false;
-  //    if (node->IsLeafPage()) {
-  //      is_dirty = true;
-  //      if (size > leaf_max_size_) {
-  //        auto *leaf_node = static_cast<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *>(node);
-  //        page_id_t new_page_id;
-  //        auto *page = buffer_pool_manager_->NewPage(&new_page_id);
-  //        auto *new_leaf = (BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *)(page->GetData());
-  //        new_leaf->Init(new_page_id);
-  //        leaf_node->MoveHalfTo(new_leaf);
-  //        leaf_node->SetNextPageId(new_page_id);
-  //
-  //        if (node->GetParentPageId() != INVALID_PAGE_ID) {
-  //          auto *parent = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>
-  //                              *)(buffer_pool_manager_->FetchPage(leaf_node->GetParentPageId())->GetData());
-  //          parent->InsertNodeAfter(leaf_node->GetPageId(), new_leaf->KeyAt(0), new_page_id);
-  //        } else {
-  //          page_id_t new_root_page_id;
-  //          auto *new_root_page = buffer_pool_manager_->NewPage(&new_root_page_id);
-  //          auto *new_root_node = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>
-  //          *)(new_root_page->GetData()); new_root_node->Init(new_root_page_id);
-  //          new_root_node->PopulateNewRoot(leaf_node->GetPageId(), new_leaf->KeyAt(0), new_page_id);
-  //
-  //          leaf_node->SetParentPageId(new_root_page_id);
-  //          new_leaf->SetParentPageId(new_root_page_id);
-  //
-  //          root_page_id_ = new_root_page_id;
-  //          buffer_pool_manager_->UnpinPage(new_root_page_id, true);
-  //        }
-  //        buffer_pool_manager_->UnpinPage(new_page_id, true);
-  //      }
-  //    } else if (size > internal_max_size_) {
-  //      is_dirty = true;
-  //      auto *internal_node = static_cast<BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *>(node);
-  //      page_id_t new_page_id;
-  //      auto *page = buffer_pool_manager_->NewPage(&new_page_id);
-  //      auto *new_internal_node = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *)(page->GetData());
-  //      internal_node->MoveHalfTo(new_internal_node, buffer_pool_manager_);
-  //      if (internal_node->GetParentPageId() != INVALID_PAGE_ID) {
-  //        auto *parent = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>
-  //                            *)(buffer_pool_manager_->FetchPage(internal_node->GetParentPageId())->GetData());
-  //        parent->InsertNodeAfter(internal_node->GetPageId(), new_internal_node->KeyAt(1), new_page_id);
-  //        buffer_pool_manager_->UnpinPage(new_page_id, true);
-  //        //
-  //      } else {
-  //        page_id_t new_root_page_id;
-  //        auto *new_root_page = buffer_pool_manager_->NewPage(&new_root_page_id);
-  //        auto *new_root_node = (BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>
-  //        *)(new_root_page->GetData()); new_root_node->PopulateNewRoot(internal_node->GetPageId(),
-  //        new_internal_node->KeyAt(1), new_page_id); root_page_id_ = new_page_id;
-  //      }
-  //    }
-  //    buffer_pool_manager_->FetchPage(node->GetPageId())->WUnlatch();
-  //    buffer_pool_manager_->UnpinPage(node->GetPageId(), is_dirty);
-  //  }
+  //  find leaf to insert, store parent on path
+  std::stack<NodeWrapType> stack;
+  NodeWrapType current_node = NodeWrapType(root_page_id_, buffer_pool_manager_);
+  while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
+    InternalPage *internalPage = current_node.toInternalPage();
+    auto page_id = internalPage->Lookup(key, comparator_);
+
+    if (internalPage->GetSize() == internal_max_size_) {
+      stack.push(current_node);
+    }
+    current_node = NodeWrapType(page_id, buffer_pool_manager_);
+  }
+  //  insert
+  assert(current_node.getIndexPageType() == IndexPageType::LEAF_PAGE);
+  LeafPage *leafPage = current_node.toLeafPage();
+  //  check if exits
+  auto res = leafPage->KeyIndex(key, comparator_);
+  if (res != -1) {
+    return false;
+  }
+  leafPage->Insert(key, value, comparator_);
+
+  //  check leaf if need to split
+
+  {
+    auto max_size = getMaxSizeByType(current_node.toBPlusTreePage());
+    if (getSize(current_node.toBPlusTreePage()) <= max_size) {
+      return true;
+    }
+    //    split, create new node
+    NodeWrapType right_node = split(current_node);
+    //    get key
+    //    auto key=right_node.
+    //    todo
+    KeyType min_key;
+    //    if(isRoot)
+    //    create new root ,set child return
+    //    insert to parent
+    if (current_node.toBPlusTreePage()->IsRootPage()) {
+      NodeWrapType root = createRoot();
+      root.toInternalPage()->PopulateNewRoot(current_node.getPageId(), min_key, right_node.getPageId());
+      assert(stack.empty());
+      return true;
+    } else {
+      NodeWrapType parentNodeWrap = stack.top();
+      stack.pop();
+      assert(parentNodeWrap.getPageId() == current_node.toBPlusTreePage()->GetParentPageId());
+      InternalPage *parentNode = parentNodeWrap.toInternalPage();
+      parentNode->InsertNodeAfter(current_node.getPageId(), min_key, right_node.getPageId());
+      current_node = parentNodeWrap;
+    }
+    //    next loop
+  }
   return true;
 }
 
@@ -185,10 +149,24 @@ bool BPLUSTREE_TYPE::InsertIntoLeaf(const KeyType &key, const ValueType &value, 
  * an "out of memory" exception if returned value is nullptr), then move half
  * of key & value pairs from input page to newly created page
  */
-INDEX_TEMPLATE_ARGUMENTS
-template <typename N>
-N *BPLUSTREE_TYPE::Split(N *node) {
-  return nullptr;
+// INDEX_TEMPLATE_ARGUMENTS
+// template <typename N>
+// N *BPLUSTREE_TYPE::Split(N *node) {
+//  No
+//  return nullptr;
+//}
+template <typename KeyType, typename ValueType, typename KeyComparator>
+typename BPlusTree<KeyType, ValueType, KeyComparator>::NodeWrapType BPlusTree<KeyType, ValueType, KeyComparator>::split(
+    const BPlusTree::NodeWrapType &node_need_split) {
+  NodeWrapType res(buffer_pool_manager_, node_need_split.getIndexPageType(),
+                   getMaxSizeByType(node_need_split.toBPlusTreePage()));
+  if (node_need_split.getIndexPageType() == IndexPageType::INTERNAL_PAGE) {
+    node_need_split.toInternalPage()->MoveHalfTo(res.toInternalPage(), buffer_pool_manager_);
+  } else {
+    node_need_split.toLeafPage()->MoveHalfTo(res.toLeafPage());
+  }
+  return res;
+  //  return bustub::BPlusTree::NodeWrapType(0, nullptr);
 }
 
 /*
@@ -200,9 +178,8 @@ N *BPLUSTREE_TYPE::Split(N *node) {
  * adjusted to take info of new_node into account. Remember to deal with split
  * recursively if necessary.
  */
-INDEX_TEMPLATE_ARGUMENTS
-void BPLUSTREE_TYPE::InsertIntoParent(BPlusTreePage *old_node, const KeyType &key, BPlusTreePage *new_node,
-                                      Transaction *transaction) {}
+INDEX_TEMPLATE_ARGUMENTS void BPLUSTREE_TYPE::InsertIntoParent(BPlusTreePage *old_node, const KeyType &key,
+                                                               BPlusTreePage *new_node, Transaction *transaction) {}
 
 /*****************************************************************************
  * REMOVE
@@ -499,10 +476,26 @@ template class BPlusTree<GenericKey<32>, RID, GenericComparator<32>>;
 template class BPlusTree<GenericKey<64>, RID, GenericComparator<64>>;
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
-void BPlusTree<KeyType, ValueType, KeyComparator>::createRoot() {
+NodePageWrap<KeyType, ValueType, KeyComparator> BPlusTree<KeyType, ValueType, KeyComparator>::createRoot() {
   auto node_wrap = NodeWrapType(buffer_pool_manager_, IndexPageType::LEAF_PAGE, leaf_max_size_);
   root_page_id_ = node_wrap.getPageId();
   UpdateRootPageId(1);
+  return node_wrap;
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+int BPlusTree<KeyType, ValueType, KeyComparator>::getMaxSizeByType(BPlusTreePage *bPlusTreePage) {
+  if (bPlusTreePage->IsLeafPage()) {
+    return leaf_max_size_;
+  } else if (bPlusTreePage->GetPageType() == IndexPageType::INTERNAL_PAGE) {
+    return internal_max_size_;
+  }
+  assert(false);
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+int BPlusTree<KeyType, ValueType, KeyComparator>::getSize(BPlusTreePage *bPlusTreePage) {
+  return 0;
 }
 
 }  // namespace bustub

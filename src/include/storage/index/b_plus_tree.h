@@ -15,10 +15,10 @@
 #include <vector>
 
 #include "concurrency/transaction.h"
+#include "page_pin_wrap.h"
 #include "storage/index/index_iterator.h"
 #include "storage/page/b_plus_tree_internal_page.h"
 #include "storage/page/b_plus_tree_leaf_page.h"
-#include "page_pin_wrap.h"
 
 namespace bustub {
 
@@ -89,8 +89,8 @@ class BPlusTree {
   void InsertIntoParent(BPlusTreePage *old_node, const KeyType &key, BPlusTreePage *new_node,
                         Transaction *transaction = nullptr);
 
-  template <typename N>
-  N *Split(N *node);
+//  template <typename N>
+//  N *Split(N *node);
 
   template <typename N>
   bool CoalesceOrRedistribute(N *node, Transaction *transaction = nullptr);
@@ -111,7 +111,11 @@ class BPlusTree {
 
   void ToString(BPlusTreePage *page, BufferPoolManager *bpm) const;
 
-  void createRoot();
+  NodeWrapType createRoot();
+
+  int getMaxSizeByType(BPlusTreePage *bPlusTreePage);
+  int getSize(BPlusTreePage *bPlusTreePage);
+  NodeWrapType split(const NodeWrapType &node_need_split);
 
   // member variable
   std::string index_name_;

@@ -111,7 +111,7 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &valu
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(BPlusTreeLeafPage *recipient) {
   auto position = GetSize() / 2;
-  auto move_number = GetSize() - position ;
+  auto move_number = GetSize() - position;
   std::memcpy(recipient->array, array + position, sizeof(MappingType) * (move_number));
   recipient->SetSize(move_number);
   SetSize(position);
@@ -211,6 +211,23 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyFirstFrom(const MappingType &item) {
   memmove(array + 1, array, GetSize() * sizeof(MappingType));
   array[0] = item;
   SetSize(GetSize() + 1);
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+std::vector<int> BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>::Keys() {
+  std::vector<int> res;
+  for (int i = 0; i < GetSize(); ++i) {
+    res.push_back(array[i].first.ToString());
+  }
+  return res;
+}
+template <typename KeyType, typename ValueType, typename KeyComparator>
+std::vector<ValueType> BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>::Values() {
+  std::vector<ValueType> res;
+  for (int i = 0; i < GetSize(); ++i) {
+    res.push_back(array[i].second);
+  }
+  return res;
 }
 
 template class BPlusTreeLeafPage<GenericKey<4>, RID, GenericComparator<4>>;

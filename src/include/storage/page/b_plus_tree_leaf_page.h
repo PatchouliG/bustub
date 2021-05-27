@@ -49,7 +49,7 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   page_id_t GetNextPageId() const;
   void SetNextPageId(page_id_t next_page_id);
   KeyType KeyAt(int index) const;
-//  return -1 if not found
+  //  return -1 if not found
   int KeyIndex(const KeyType &key, const KeyComparator &comparator) const;
   const MappingType &GetItem(int index);
 
@@ -63,6 +63,9 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   void MoveAllTo(BPlusTreeLeafPage *recipient);
   void MoveFirstToEndOf(BPlusTreeLeafPage *recipient);
   void MoveLastToFrontOf(BPlusTreeLeafPage *recipient);
+
+  std::vector<int> Keys();
+  std::vector<ValueType> Values();
 
  private:
   void CopyNFrom(MappingType *items, int size);

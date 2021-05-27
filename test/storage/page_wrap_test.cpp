@@ -36,6 +36,9 @@ TEST(BPlusTreeTests, test_page_wrap_pin_count) {
       a_page = c.getPage();
     }
     EXPECT_EQ(a_page->GetPinCount(), 1);
+
+    NodePageWrap d = a;
+    EXPECT_EQ(a_page->GetPinCount(), 2);
   }
   EXPECT_EQ(a_page->GetPinCount(), 0);
   EXPECT_EQ(b_page->GetPinCount(), 0);

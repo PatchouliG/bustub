@@ -28,6 +28,8 @@ class NodePageWrap {
                page_id_t parent_id = INVALID_PAGE_ID)
       : bufferPoolManager(bufferPoolManager) {
     page = bufferPoolManager->NewPage(&page_id);
+    //    allocate fail
+    assert(page != nullptr);
     is_dirty = true;
     this->indexPageType = indexPageType;
     if (indexPageType == IndexPageType::LEAF_PAGE) {
@@ -36,15 +38,25 @@ class NodePageWrap {
       toInternalPage()->Init(page_id, parent_id, max_size);
     }
   }
+
+  NodePageWrap(const NodePageWrap &nodePageWrap)
+      : page(nodePageWrap.page),
+        page_id(nodePageWrap.page_id),
+        indexPageType(nodePageWrap.indexPageType),
+        is_dirty(nodePageWrap.is_dirty),
+        bufferPoolManager(nodePageWrap.bufferPoolManager) {
+    page = bufferPoolManager->FetchPage(page_id);
+  }
   virtual ~NodePageWrap() { bufferPoolManager->UnpinPage(page_id, is_dirty); }
 
   void setIsDirty() { NodePageWrap::is_dirty = true; }
   IndexPageType getIndexPageType() const { return indexPageType; }
   LeafPage *toLeafPage() const { return (LeafPage *)(page->GetData()); }
   InternalPage *toInternalPage() const { return (InternalPage *)(page->GetData()); }
+  BPlusTreePage *toBPlusTreePage() const { return (BPlusTreePage *)(page->GetData()); }
 
   page_id_t getPageId() const { return page_id; }
-//  test only
+  //  test only
   Page *getPage() const { return page; }
 
  private:

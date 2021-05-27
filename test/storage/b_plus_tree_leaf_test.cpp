@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <stack>
 
 #include "b_plus_tree_test_util.h"  // NOLINT
 #include "buffer/buffer_pool_manager.h"
@@ -11,6 +12,12 @@
 #include "storage/index/b_plus_tree.h"
 
 namespace bustub {
+
+Schema *key_schema = ParseCreateStatement("a bigint");
+GenericComparator<64> comparator(key_schema);
+
+DiskManager *disk_manager = new DiskManager("test.db");
+BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
 
 TEST(BPlusTreeTests, test_init) {
   void *page = malloc(1024);
@@ -26,7 +33,7 @@ TEST(BPlusTreeTests, test_insert) {
   auto *leaf_node = (BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *)(page);
   leaf_node->Init(1, 2, 100);
   auto key = GenericKey<64>();
-  Schema *key_schema = ParseCreateStatement("a bigint");
+  //  Schema *key_schema = ParseCreateStatement("a bigint");
   auto comp = GenericComparator<64>(key_schema);
   key.SetFromInteger(2);
   leaf_node->Insert(key, RID(), comp);
@@ -65,15 +72,16 @@ TEST(BPlusTreeTests, test_insert) {
 }
 
 TEST(BPlusTreeTests, test_KeyIndex) {
-  void *page = malloc(1024);
-  auto *leaf_node = (BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *)(page);
-  leaf_node->Init(1, 2, 3);
+  auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
+  auto *leaf_node = nodeWrap.toLeafPage();
   auto key = GenericKey<64>();
   key.SetFromInteger(234);
-  Schema *key_schema = ParseCreateStatement("a bigint");
-  auto comp = GenericComparator<64>(key_schema);
 
-  leaf_node->Insert(key, RID(), comp);
-  leaf_node->KeyIndex(key, comp);
+  leaf_node->Insert(key, RID(), comparator);
+  leaf_node->KeyIndex(key, comparator);
+
+  auto keys = leaf_node->Keys();
+  EXPECT_EQ(keys.size(), 1);
+  EXPECT_EQ(keys[0], 234);
 }
 }  // namespace bustub
