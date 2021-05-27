@@ -20,9 +20,9 @@ DiskManager *disk_manager = new DiskManager("test.db");
 BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
 
 TEST(BPlusTreeTests, test_init) {
-//  void *page = malloc(1024);
-//  auto *leaf_node = static_cast<BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *>(page);
-//  leaf_node->Init(1, 2, 3);
+  //  void *page = malloc(1024);
+  //  auto *leaf_node = static_cast<BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *>(page);
+  //  leaf_node->Init(1, 2, 3);
   auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
   auto *leaf_node = nodeWrap.toLeafPage();
   EXPECT_EQ(leaf_node->GetPageId(), 0);
@@ -32,9 +32,9 @@ TEST(BPlusTreeTests, test_init) {
 TEST(BPlusTreeTests, test_insert) {
   auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
   auto *leaf_node = nodeWrap.toLeafPage();
-//  auto *leaf_node = nodeWrap.toLeafPage();
-//  void *page = malloc(1024);
-//  auto *leaf_node = (BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *)(page);
+  //  auto *leaf_node = nodeWrap.toLeafPage();
+  //  void *page = malloc(1024);
+  //  auto *leaf_node = (BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *)(page);
   leaf_node->Init(1, 2, 100);
   auto key = GenericKey<64>();
   //  Schema *key_schema = ParseCreateStatement("a bigint");
@@ -87,5 +87,48 @@ TEST(BPlusTreeTests, test_KeyIndex) {
   auto keys = leaf_node->Keys();
   EXPECT_EQ(keys.size(), 1);
   EXPECT_EQ(keys[0], 234);
+}
+TEST(BPlusTreeTests, test_MoveHalf) {
+  //  test odd element
+  auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
+  auto *leaf_node = nodeWrap.toLeafPage();
+  //  insert to max
+  auto new_node_wrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
+  auto *new_node = new_node_wrap.toLeafPage();
+
+  RID rid = RID();
+  auto key = GenericKey<64>();
+  key.SetFromInteger(1);
+  leaf_node->Insert(key, rid, comparator);
+  key.SetFromInteger(3);
+  leaf_node->Insert(key, rid, comparator);
+  key.SetFromInteger(2);
+  leaf_node->Insert(key, rid, comparator);
+
+  leaf_node->MoveHalfTo(new_node);
+  auto leaf_node_keys = leaf_node->Keys();
+  auto new_node_keys = new_node->Keys();
+  EXPECT_EQ(leaf_node_keys.size(), 1);
+  EXPECT_EQ(leaf_node_keys[0], 1);
+
+  EXPECT_EQ(new_node_keys.size(), 2);
+  EXPECT_EQ(new_node_keys[0], 2);
+  EXPECT_EQ(new_node_keys[1], 3);
+
+  //  test even element
+  key.SetFromInteger(-1);
+  leaf_node->Insert(key, rid, comparator);
+  new_node_wrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
+  new_node = new_node_wrap.toLeafPage();
+  leaf_node->MoveHalfTo(new_node);
+
+  leaf_node_keys = leaf_node->Keys();
+  new_node_keys = new_node->Keys();
+
+  EXPECT_EQ(leaf_node_keys.size(), 1);
+  EXPECT_EQ(leaf_node_keys[0], -1);
+
+  EXPECT_EQ(new_node_keys.size(), 1);
+  EXPECT_EQ(new_node_keys[0], 1);
 }
 }  // namespace bustub
