@@ -51,7 +51,7 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
 
     current_node = NodeWrapType(page_id, buffer_pool_manager_);
   }
-  LeafPage *leafPage = current_node.toLeafPage();
+  const LeafPage *leafPage = current_node.toLeafPage();
   auto index = leafPage->KeyIndex(key, comparator_);
   if (index == -1) {
     return false;
@@ -92,7 +92,7 @@ bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   }
   //  insert
   assert(current_node.getIndexPageType() == IndexPageType::LEAF_PAGE);
-  LeafPage *leafPage = current_node.toLeafPage();
+  LeafPage *leafPage = current_node.toMutableLeafPage();
   //  check if exits
   auto res = leafPage->KeyIndex(key, comparator_);
   if (res != -1 && comparator_(leafPage->KeyAt(res), key) == 0) {
@@ -171,15 +171,15 @@ bool BPLUSTREE_TYPE::InsertIntoLeaf(const KeyType &key, const ValueType &value, 
 //}
 template <typename KeyType, typename ValueType, typename KeyComparator>
 typename BPlusTree<KeyType, ValueType, KeyComparator>::NodeWrapType BPlusTree<KeyType, ValueType, KeyComparator>::split(
-    const BPlusTree::NodeWrapType &node_need_split) {
+    BPlusTree::NodeWrapType &node_need_split) {
   NodeWrapType res(buffer_pool_manager_, node_need_split.getIndexPageType(),
                    getMaxSizeByType(node_need_split.toBPlusTreePage()),
                    node_need_split.toBPlusTreePage()->GetParentPageId());
   if (node_need_split.getIndexPageType() == IndexPageType::INTERNAL_PAGE) {
-    node_need_split.toInternalPage()->MoveHalfTo(res.toInternalPage(), buffer_pool_manager_);
+    node_need_split.toMutableInternalPage()->MoveHalfTo(res.toMutableInternalPage(), buffer_pool_manager_);
   } else {
-    node_need_split.toLeafPage()->MoveHalfTo(res.toLeafPage());
-    node_need_split.toLeafPage()->SetNextPageId(res.getPageId());
+    node_need_split.toMutableLeafPage()->MoveHalfTo(res.toMutableLeafPage());
+    node_need_split.toMutableLeafPage()->SetNextPageId(res.getPageId());
   }
   return res;
   //  return bustub::BPlusTree::NodeWrapType(0, nullptr);
@@ -277,7 +277,17 @@ bool BPLUSTREE_TYPE::AdjustRoot(BPlusTreePage *old_root_node) { return false; }
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-INDEXITERATOR_TYPE BPLUSTREE_TYPE::begin() { return INDEXITERATOR_TYPE(); }
+INDEXITERATOR_TYPE BPLUSTREE_TYPE::begin() {
+  NodeWrapType current_node = NodeWrapType(root_page_id_, buffer_pool_manager_);
+  while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
+    const InternalPage *internalPage = current_node.toInternalPage();
+    auto page_id = internalPage->ValueAt(0);
+
+    current_node = NodeWrapType(page_id, buffer_pool_manager_);
+  }
+  return IndexIterator<KeyType, ValueType, KeyComparator>(current_node, buffer_pool_manager_, 0);
+  //    return INDEXITERATOR_TYPE();
+}
 
 /*
  * Input parameter is low key, find the leaf page that contains the input key
@@ -285,7 +295,11 @@ INDEXITERATOR_TYPE BPLUSTREE_TYPE::begin() { return INDEXITERATOR_TYPE(); }
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-INDEXITERATOR_TYPE BPLUSTREE_TYPE::Begin(const KeyType &key) { return INDEXITERATOR_TYPE(); }
+INDEXITERATOR_TYPE BPLUSTREE_TYPE::Begin(const KeyType &key) {
+  NodeWrapType leaf = findLeaf(key);
+  return IndexIterator<KeyType, ValueType, KeyComparator>(leaf, buffer_pool_manager_,
+                                                          leaf.toLeafPage()->KeyIndex(key, comparator_));
+}
 
 /*
  * Input parameter is void, construct an index iterator representing the end
@@ -293,7 +307,17 @@ INDEXITERATOR_TYPE BPLUSTREE_TYPE::Begin(const KeyType &key) { return INDEXITERA
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-INDEXITERATOR_TYPE BPLUSTREE_TYPE::end() { return INDEXITERATOR_TYPE(); }
+INDEXITERATOR_TYPE BPLUSTREE_TYPE::end() {
+  NodeWrapType current_node = NodeWrapType(root_page_id_, buffer_pool_manager_);
+  while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
+    const InternalPage *internalPage = current_node.toInternalPage();
+    auto page_id = internalPage->ValueAt(internalPage->GetSize() - 1);
+
+    current_node = NodeWrapType(page_id, buffer_pool_manager_);
+  }
+  return IndexIterator<KeyType, ValueType, KeyComparator>(current_node, buffer_pool_manager_,
+                                                          current_node.toLeafPage()->GetSize());
+}
 
 /*****************************************************************************
  * UTILITIES AND DEBUG
@@ -531,5 +555,18 @@ void BPlusTree<KeyType, ValueType, KeyComparator>::updateParentNode(const BPlusT
                                                                     BPlusTree::NodeWrapType &b) {
   a.toBPlusTreePage()->SetParentPageId(parent.toBPlusTreePage()->GetPageId());
   b.toBPlusTreePage()->SetParentPageId(parent.toBPlusTreePage()->GetPageId());
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+typename BPlusTree<KeyType, ValueType, KeyComparator>::NodeWrapType
+BPlusTree<KeyType, ValueType, KeyComparator>::findLeaf(const KeyType &key) {
+  NodeWrapType current_node = NodeWrapType(root_page_id_, buffer_pool_manager_);
+  while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
+    const InternalPage *internalPage = current_node.toInternalPage();
+    auto page_id = internalPage->Lookup(key, comparator_);
+
+    current_node = NodeWrapType(page_id, buffer_pool_manager_);
+  }
+  return current_node;
 }
 }  // namespace bustub

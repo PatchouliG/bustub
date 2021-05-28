@@ -19,7 +19,7 @@ DiskManager *disk_manager = new DiskManager("test.db");
 BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
 
 TEST(BPlusTreeTests, test_init) {
-  auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 3);
+  auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::INTERNAL_PAGE, 3);
   auto node = nodeWrap.toInternalPage();
   EXPECT_EQ(node->GetPageId(), 0);
   EXPECT_EQ(node->GetMaxSize(), 3);
@@ -27,8 +27,8 @@ TEST(BPlusTreeTests, test_init) {
 }
 
 TEST(BPlusTreeTests, test_populateNewRoot) {
-  auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
-  auto internal_node = nodeWrap.toInternalPage();
+  auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::INTERNAL_PAGE, 10);
+  auto internal_node = nodeWrap.toMutableInternalPage();
 
   auto key = GenericKey<64>();
   key.SetFromInteger(1);

@@ -34,9 +34,9 @@ class NodePageWrap {
     is_dirty = true;
     this->indexPageType = indexPageType;
     if (indexPageType == IndexPageType::LEAF_PAGE) {
-      toLeafPage()->Init(page_id, parent_id, max_size);
+      toMutableLeafPage()->Init(page_id, parent_id, max_size);
     } else {
-      toInternalPage()->Init(page_id, parent_id, max_size);
+      toMutableInternalPage()->Init(page_id, parent_id, max_size);
     }
   }
 
@@ -52,8 +52,13 @@ class NodePageWrap {
 
   void setIsDirty() { NodePageWrap::is_dirty = true; }
   IndexPageType getIndexPageType() const { return indexPageType; }
-  LeafPage *toLeafPage() const {
+  const LeafPage *toLeafPage() const {
     assert(getIndexPageType() == IndexPageType::LEAF_PAGE);
+    return (LeafPage *)(page->GetData());
+  }
+  LeafPage *toMutableLeafPage() {
+    assert(getIndexPageType() == IndexPageType::LEAF_PAGE);
+    this->is_dirty = true;
     return (LeafPage *)(page->GetData());
   }
   const InternalPage *toInternalPage() const {

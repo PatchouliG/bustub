@@ -26,9 +26,8 @@ class IndexIterator {
   using NodeWrapType = NodePageWrap<KeyType, ValueType, KeyComparator>;
 
   // you may define your own constructor based on your member variables
-//  todo
-//  IndexIterator();
-  IndexIterator(const NodePageWrap<KeyType, ValueType, KeyComparator> &nodePageWrap, size_t index);
+  //  todo
+//  IndexIterator(const NodePageWrap<KeyType, ValueType, KeyComparator> &nodePageWrap, size_t index);
   IndexIterator(const NodeWrapType &nodePageWrap, BufferPoolManager *bufferPoolManager, int index);
   ~IndexIterator();
 
@@ -38,9 +37,11 @@ class IndexIterator {
 
   IndexIterator &operator++();
 
-  bool operator==(const IndexIterator &itr) const { throw std::runtime_error("unimplemented"); }
+  bool operator==(const IndexIterator &itr) const {
+    return nodePageWrap.toLeafPage()->GetPageId() == itr.nodePageWrap.toLeafPage()->GetPageId() && index == itr.index;
+  }
 
-  bool operator!=(const IndexIterator &itr) const { throw std::runtime_error("unimplemented"); }
+  bool operator!=(const IndexIterator &itr) const { return !operator==(itr); }
 
  private:
   NodePageWrap<KeyType, ValueType, KeyComparator> nodePageWrap;

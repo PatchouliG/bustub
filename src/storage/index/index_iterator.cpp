@@ -15,29 +15,34 @@ namespace bustub {
 // INDEX_TEMPLATE_ARGUMENTS
 // INDEXITERATOR_TYPE::IndexIterator() = default;
 
-//template <typename KeyType, typename ValueType, typename KeyComparator>
-//IndexIterator<KeyType, ValueType, KeyComparator>::IndexIterator() {}
+// template <typename KeyType, typename ValueType, typename KeyComparator>
+// IndexIterator<KeyType, ValueType, KeyComparator>::IndexIterator() {}
 
 INDEX_TEMPLATE_ARGUMENTS
 INDEXITERATOR_TYPE::~IndexIterator() = default;
 
 INDEX_TEMPLATE_ARGUMENTS
 bool INDEXITERATOR_TYPE::isEnd() {
-  LeafPage *leafPage = nodePageWrap.toLeafPage();
-  return leafPage->GetNextPageId() == INVALID_PAGE_ID && index == leafPage->GetSize() - 1;
+  const LeafPage *leafPage = nodePageWrap.toLeafPage();
+  return leafPage->GetNextPageId() == INVALID_PAGE_ID && index == leafPage->GetSize();
 }
 
 INDEX_TEMPLATE_ARGUMENTS
 const MappingType &INDEXITERATOR_TYPE::operator*() {
-  LeafPage *leafPage = nodePageWrap.toLeafPage();
+  const LeafPage *leafPage = nodePageWrap.toLeafPage();
   return leafPage->GetItem(index);
 }
 
 INDEX_TEMPLATE_ARGUMENTS
 INDEXITERATOR_TYPE &INDEXITERATOR_TYPE::operator++() {
   assert(!isEnd());
-  LeafPage *leafPage = nodePageWrap.toLeafPage();
-  if (index != leafPage->GetSize() - 1) {
+  const LeafPage *leafPage = nodePageWrap.toLeafPage();
+  if (leafPage->GetNextPageId() == INVALID_PAGE_ID) {
+    index++;
+    if (index > leafPage->GetSize()) {
+      index = leafPage->GetSize();
+    }
+  } else if (index != leafPage->GetSize() - 1) {
     index++;
   } else {
     index = 0;

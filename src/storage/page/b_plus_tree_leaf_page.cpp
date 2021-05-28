@@ -75,7 +75,7 @@ KeyType B_PLUS_TREE_LEAF_PAGE_TYPE::KeyAt(int index) const {
  * "index"(a.k.a array offset)
  */
 INDEX_TEMPLATE_ARGUMENTS
-const MappingType &B_PLUS_TREE_LEAF_PAGE_TYPE::GetItem(int index) {
+const MappingType &B_PLUS_TREE_LEAF_PAGE_TYPE::GetItem(int index) const{
   // replace with your own code
   assert(index >= 0 && index < GetSize());
   return array[index];

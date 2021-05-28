@@ -31,7 +31,7 @@ TEST(BPlusTreeTests, test_init) {
 }  // namespace bustub
 TEST(BPlusTreeTests, test_insert) {
   auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
-  auto *leaf_node = nodeWrap.toLeafPage();
+  auto *leaf_node = nodeWrap.toMutableLeafPage();
   //  auto *leaf_node = nodeWrap.toLeafPage();
   //  void *page = malloc(1024);
   //  auto *leaf_node = (BPlusTreeLeafPage<GenericKey<64>, RID, GenericComparator<64>> *)(page);
@@ -77,7 +77,7 @@ TEST(BPlusTreeTests, test_insert) {
 
 TEST(BPlusTreeTests, test_KeyIndex) {
   auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
-  auto *leaf_node = nodeWrap.toLeafPage();
+  auto *leaf_node = nodeWrap.toMutableLeafPage();
   auto key = GenericKey<64>();
   key.SetFromInteger(234);
 
@@ -91,10 +91,10 @@ TEST(BPlusTreeTests, test_KeyIndex) {
 TEST(BPlusTreeTests, test_MoveHalf) {
   //  test odd element
   auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
-  auto *leaf_node = nodeWrap.toLeafPage();
+  auto *leaf_node = nodeWrap.toMutableLeafPage();
   //  insert to max
   auto new_node_wrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
-  auto *new_node = new_node_wrap.toLeafPage();
+  auto *new_node = new_node_wrap.toMutableLeafPage();
 
   RID rid = RID();
   auto key = GenericKey<64>();
@@ -119,7 +119,7 @@ TEST(BPlusTreeTests, test_MoveHalf) {
   key.SetFromInteger(-1);
   leaf_node->Insert(key, rid, comparator);
   new_node_wrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
-  new_node = new_node_wrap.toLeafPage();
+  new_node = new_node_wrap.toMutableLeafPage();
   leaf_node->MoveHalfTo(new_node);
 
   leaf_node_keys = leaf_node->Keys();
