@@ -48,9 +48,7 @@ class NodePageWrap {
         bufferPoolManager(nodePageWrap.bufferPoolManager) {
     page = bufferPoolManager->FetchPage(page_id);
   }
-  virtual ~NodePageWrap() {
-    bufferPoolManager->UnpinPage(page_id, is_dirty);
-  }
+  virtual ~NodePageWrap() { bufferPoolManager->UnpinPage(page_id, is_dirty); }
 
   void setIsDirty() { NodePageWrap::is_dirty = true; }
   IndexPageType getIndexPageType() const { return indexPageType; }
@@ -58,8 +56,13 @@ class NodePageWrap {
     assert(getIndexPageType() == IndexPageType::LEAF_PAGE);
     return (LeafPage *)(page->GetData());
   }
-  InternalPage *toInternalPage() const {
+  const InternalPage *toInternalPage() const {
     assert(getIndexPageType() == IndexPageType::INTERNAL_PAGE);
+    return (InternalPage *)(page->GetData());
+  }
+  InternalPage *toMutableInternalPage() {
+    assert(getIndexPageType() == IndexPageType::INTERNAL_PAGE);
+    is_dirty = true;
     return (InternalPage *)(page->GetData());
   }
   BPlusTreePage *toBPlusTreePage() const { return (BPlusTreePage *)(page->GetData()); }

@@ -88,7 +88,7 @@ INDEX_TEMPLATE_ARGUMENTS
 ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::Lookup(const KeyType &key, const KeyComparator &comparator) const {
   //  todo need test
   for (auto i = 1; i < GetSize(); ++i) {
-    if (comparator(array[i].first, key) >= 0) {
+    if (comparator(array[i].first, key) > 0) {
       return array[i - 1].second;
     }
   }

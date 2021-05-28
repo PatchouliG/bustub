@@ -22,8 +22,14 @@ namespace bustub {
 INDEX_TEMPLATE_ARGUMENTS
 class IndexIterator {
  public:
+  using LeafPage = BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>;
+  using NodeWrapType = NodePageWrap<KeyType, ValueType, KeyComparator>;
+
   // you may define your own constructor based on your member variables
-  IndexIterator();
+//  todo
+//  IndexIterator();
+  IndexIterator(const NodePageWrap<KeyType, ValueType, KeyComparator> &nodePageWrap, size_t index);
+  IndexIterator(const NodeWrapType &nodePageWrap, BufferPoolManager *bufferPoolManager, int index);
   ~IndexIterator();
 
   bool isEnd();
@@ -37,6 +43,10 @@ class IndexIterator {
   bool operator!=(const IndexIterator &itr) const { throw std::runtime_error("unimplemented"); }
 
  private:
+  NodePageWrap<KeyType, ValueType, KeyComparator> nodePageWrap;
+  BufferPoolManager *bufferPoolManager;
+  int index;
+
   // add your own private member variables here
 };
 

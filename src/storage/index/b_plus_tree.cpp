@@ -44,7 +44,20 @@ bool BPLUSTREE_TYPE::IsEmpty() const { return root_page_id_ == INVALID_PAGE_ID; 
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction) {
-  return false;
+  NodeWrapType current_node = NodeWrapType(root_page_id_, buffer_pool_manager_);
+  while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
+    const InternalPage *internalPage = current_node.toInternalPage();
+    auto page_id = internalPage->Lookup(key, comparator_);
+
+    current_node = NodeWrapType(page_id, buffer_pool_manager_);
+  }
+  LeafPage *leafPage = current_node.toLeafPage();
+  auto index = leafPage->KeyIndex(key, comparator_);
+  if (index == -1) {
+    return false;
+  }
+  result->push_back(leafPage->GetItem(index).second);
+  return true;
 }
 
 /*****************************************************************************
@@ -68,10 +81,10 @@ bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   std::stack<NodeWrapType> stack;
   NodeWrapType current_node = NodeWrapType(root_page_id_, buffer_pool_manager_);
   while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
-    InternalPage *internalPage = current_node.toInternalPage();
+    const InternalPage *internalPage = current_node.toInternalPage();
     auto page_id = internalPage->Lookup(key, comparator_);
 
-//    todo
+    //    todo
     //    if (internalPage->GetSize() == internal_max_size_) {
     stack.push(current_node);
     //    }
@@ -103,16 +116,16 @@ bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
     //    insert to parent
     if (current_node.toBPlusTreePage()->IsRootPage()) {
       NodeWrapType root = createRoot(false);
-      root.toInternalPage()->PopulateNewRoot(current_node.getPageId(), min_key, right_node.getPageId());
+      root.toMutableInternalPage()->PopulateNewRoot(current_node.getPageId(), min_key, right_node.getPageId());
       updateParentNode(root, current_node, right_node);
-//      todo
-//      assert(stack.empty());
+      //      todo
+      //      assert(stack.empty());
       return true;
     } else {
       NodeWrapType parentNodeWrap = stack.top();
       stack.pop();
       assert(parentNodeWrap.getPageId() == current_node.toBPlusTreePage()->GetParentPageId());
-      InternalPage *parentNode = parentNodeWrap.toInternalPage();
+      InternalPage *parentNode = parentNodeWrap.toMutableInternalPage();
       parentNode->InsertNodeAfter(current_node.getPageId(), min_key, right_node.getPageId());
       current_node = parentNodeWrap;
     }
@@ -160,7 +173,8 @@ template <typename KeyType, typename ValueType, typename KeyComparator>
 typename BPlusTree<KeyType, ValueType, KeyComparator>::NodeWrapType BPlusTree<KeyType, ValueType, KeyComparator>::split(
     const BPlusTree::NodeWrapType &node_need_split) {
   NodeWrapType res(buffer_pool_manager_, node_need_split.getIndexPageType(),
-                   getMaxSizeByType(node_need_split.toBPlusTreePage()));
+                   getMaxSizeByType(node_need_split.toBPlusTreePage()),
+                   node_need_split.toBPlusTreePage()->GetParentPageId());
   if (node_need_split.getIndexPageType() == IndexPageType::INTERNAL_PAGE) {
     node_need_split.toInternalPage()->MoveHalfTo(res.toInternalPage(), buffer_pool_manager_);
   } else {

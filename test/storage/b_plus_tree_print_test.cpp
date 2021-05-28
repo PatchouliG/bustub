@@ -47,7 +47,7 @@ TEST(BptTreeTest, UNITTEST) {
   RID rid;
   std::string filename;
 
-  std::ifstream in("/Users/ning.wang/code/bustub/tmp");
+  std::ifstream in("/Users/wn/code/bustub/tmp");
 //  todo use file save output
 //  freopen("/Users/ning.wang/code/bustub/output", "w", stdout);
 
