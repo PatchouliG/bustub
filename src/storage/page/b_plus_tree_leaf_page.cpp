@@ -75,7 +75,7 @@ KeyType B_PLUS_TREE_LEAF_PAGE_TYPE::KeyAt(int index) const {
  * "index"(a.k.a array offset)
  */
 INDEX_TEMPLATE_ARGUMENTS
-const MappingType &B_PLUS_TREE_LEAF_PAGE_TYPE::GetItem(int index) const{
+const MappingType &B_PLUS_TREE_LEAF_PAGE_TYPE::GetItem(int index) const {
   // replace with your own code
   assert(index >= 0 && index < GetSize());
   return array[index];
@@ -152,7 +152,17 @@ bool B_PLUS_TREE_LEAF_PAGE_TYPE::Lookup(const KeyType &key, ValueType *value, co
  * @return   page size after deletion
  */
 INDEX_TEMPLATE_ARGUMENTS
-int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(const KeyType &key, const KeyComparator &comparator) { return 0; }
+int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(const KeyType &key, const KeyComparator &comparator) {
+  for (int i = 0; i < GetSize(); ++i) {
+    if (comparator(array[i].first, key) == 0) {
+      if (i != GetSize() - 1) {
+        memmove(&array[i], &array[i + 1], sizeof(MappingType) * (GetSize() - 1 - i));
+      }
+      IncreaseSize(-1);
+    }
+  }
+  return GetSize();
+}
 
 /*****************************************************************************
  * MERGE

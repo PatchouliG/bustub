@@ -131,4 +131,39 @@ TEST(BPlusTreeTests, test_MoveHalf) {
   EXPECT_EQ(new_node_keys.size(), 1);
   EXPECT_EQ(new_node_keys[0], 1);
 }
+TEST(BPlusTreeTests, test_Delete) {
+
+    //  test odd element
+    auto nodeWrap = NodePageWrap<GenericKey<64>, RID, GenericComparator<64>>(bpm, IndexPageType::LEAF_PAGE, 10);
+    auto *leaf_node = nodeWrap.toMutableLeafPage();
+
+    RID rid = RID();
+    auto key = GenericKey<64>();
+
+    auto res = leaf_node->RemoveAndDeleteRecord(key, comparator);
+    EXPECT_EQ(res, 0);
+
+    key.SetFromInteger(1);
+    leaf_node->Insert(key, rid, comparator);
+    key.SetFromInteger(3);
+    leaf_node->Insert(key, rid, comparator);
+    key.SetFromInteger(2);
+    leaf_node->Insert(key, rid, comparator);
+
+    key.SetFromInteger(2);
+    res = leaf_node->RemoveAndDeleteRecord(key, comparator);
+    EXPECT_EQ(res, 2);
+
+    key.SetFromInteger(4);
+    res = leaf_node->RemoveAndDeleteRecord(key, comparator);
+    EXPECT_EQ(res, 2);
+
+    key.SetFromInteger(3);
+    res = leaf_node->RemoveAndDeleteRecord(key, comparator);
+    EXPECT_EQ(res, 1);
+
+    key.SetFromInteger(1);
+    res = leaf_node->RemoveAndDeleteRecord(key, comparator);
+    EXPECT_EQ(res, 0);
+}
 }  // namespace bustub
