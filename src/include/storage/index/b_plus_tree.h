@@ -122,6 +122,8 @@ class BPlusTree {
   NodeWrapType findLeaf(const KeyType &key);
 
   int minSize(const NodeWrapType &node);
+  NodeWrapType getRightSibling(const NodeWrapType &node, const NodeWrapType &parent);
+  NodeWrapType getLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
 
   // member variable
   std::string index_name_;

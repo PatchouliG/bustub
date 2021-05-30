@@ -45,6 +45,17 @@ KeyType B_PLUS_TREE_INTERNAL_PAGE_TYPE::KeyAt(int index) const {
 }
 
 INDEX_TEMPLATE_ARGUMENTS
+int BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::KeyIndex(const KeyType &key,
+                                                                       const KeyComparator &comparator) const {
+  for (auto i = 0; i < GetSize(); ++i) {
+    if (comparator(array[i].first, key) == 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) {
   //  need test todo
   array[index].first = key;
@@ -168,7 +179,10 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::CopyNFrom(MappingType *items, int size, Buf
  * NOTE: store key&value pair continuously after deletion
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Remove(int index) {}
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Remove(int index) {
+  std::memcpy(array + index, array + index + 1, (GetSize() - 1 - index) * sizeof(MappingType));
+  IncreaseSize(-1);
+}
 
 /*
  * Remove the only key & value pair in internal page and return the value

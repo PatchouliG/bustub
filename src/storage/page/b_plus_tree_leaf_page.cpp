@@ -173,8 +173,9 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(const KeyType &key, const 
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient) {
-  std::memcpy(array, recipient->array, GetSize() * sizeof(MappingType));
-  SetSize(0);
+  std::memcpy(recipient->array + recipient->GetSize(), array, GetSize() * sizeof(MappingType));
+//  SetSize(0);
+  recipient->IncreaseSize(GetSize());
   recipient->SetNextPageId(GetNextPageId());
 }
 

@@ -238,14 +238,16 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
     root_page_id_ = INVALID_PAGE_ID;
     return;
   }
+
+  NodeWrapType parent = stack.top();
+
   //  try redistribute ,return
   if (leafPage->GetNextPageId() != INVALID_PAGE_ID) {
-    NodeWrapType nextNode(leafPage->GetNextPageId(), buffer_pool_manager_);
+    NodeWrapType nextNode = getRightSibling(current_node, parent);
     LeafPage *nextLeafPage = nextNode.toMutableLeafPage();
     if (nextLeafPage->GetSize() > nextLeafPage->GetMinSize()) {
       nextLeafPage->MoveFirstToEndOf(leafPage);
       // set parent node
-      NodeWrapType parent = stack.top();
       InternalPage *parentPage = parent.toMutableInternalPage();
       auto position = parentPage->ValueIndex(leafPage->GetPageId());
       //      auto position = parentPage->Lookup(key, comparator_);
@@ -256,11 +258,10 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   }
   //  try left node
   {
-    NodeWrapType parent = stack.top();
     InternalPage *parentPage = parent.toMutableInternalPage();
     auto position = parentPage->ValueIndex(leafPage->GetPageId());
     if (position != 0) {
-      NodeWrapType left_node = NodeWrapType(parentPage->ValueAt(position - 1), buffer_pool_manager_);
+      NodeWrapType left_node = getLeftSibling(current_node, parent);
       const LeafPage *left_node_page = left_node.toLeafPage();
       if (left_node_page->GetSize() > minSize(left_node)) {
         LeafPage *left_node_page_muta = left_node.toMutableLeafPage();
@@ -272,10 +273,51 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
     }
   }
 
-  //  if (leafPage.N)
-  //  merge
-  //  set key need  delete for parent
+  KeyType keyNeedDelete;
+  NodeWrapType resultNode;
+  //  merge right
+  if (leafPage->GetNextPageId() != INVALID_PAGE_ID) {
+    NodeWrapType nextNode = getRightSibling(current_node, parent);
+    LeafPage *nextLeafPage = nextNode.toMutableLeafPage();
+    nextLeafPage->MoveAllTo(leafPage);
+    keyNeedDelete = nextLeafPage->KeyAt(0);
+    resultNode = current_node;
+    buffer_pool_manager_->DeletePage(nextLeafPage->GetPageId());
+    //    mergedNode = current_node;
+    //    merge left
+  } else {
+    NodeWrapType leftNode = getLeftSibling(current_node, parent);
+    //    todo
+    //    mergedNode = leftNode;
+    //    merge left
+    keyNeedDelete = leafPage->KeyAt(0);
+    resultNode = leftNode;
+  }
+
+  //  InternalPage *parentPage = parent.toMutableInternalPage();
+  //  auto position = parentPage->KeyIndex(keyNeedDelete, comparator_);
+  //  parentPage->Remove(position);
+
   while (true) {
+
+    parent = stack.top();
+    InternalPage *parentPage = parent.toMutableInternalPage();
+    auto position = parentPage->KeyIndex(keyNeedDelete, comparator_);
+    if (position == -1) {
+      position = parentPage->GetSize() - 1;
+    }
+    parentPage->Remove(position - 1);
+    //    handle root
+    if (parentPage->GetPageId() == root_page_id_ && parentPage->GetSize() == 1) {
+      buffer_pool_manager_->DeletePage(parentPage->GetPageId());
+      root_page_id_ = resultNode.getPageId();
+      return;
+    }
+    //    todo for debug
+    return;
+
+    //    current_node = stack.top();
+    //    stack.pop();
     //    delete key
     // check size
     //  handle root
@@ -654,6 +696,31 @@ int BPlusTree<KeyType, ValueType, KeyComparator>::minSize(const BPlusTree::NodeW
     return 0;
   }
   return node.toBPlusTreePage()->GetMinSize();
+}
+template <typename KeyType, typename ValueType, typename KeyComparator>
+typename BPlusTree<KeyType, ValueType, KeyComparator>::NodeWrapType
+BPlusTree<KeyType, ValueType, KeyComparator>::getRightSibling(const BPlusTree::NodeWrapType &node,
+                                                              const BPlusTree::NodeWrapType &parent) {
+  if (node.getIndexPageType() == IndexPageType::LEAF_PAGE) {
+    auto pageId = node.toLeafPage()->GetNextPageId();
+    assert(pageId != INVALID_PAGE_ID);
+    return NodeWrapType(pageId, buffer_pool_manager_);
+  } else {
+    const InternalPage *internalPage = parent.toInternalPage();
+    auto position = internalPage->ValueAt(node.getPageId());
+    assert(position != internalPage->GetSize() - 1);
+    return NodeWrapType(internalPage->ValueAt(position + 1), buffer_pool_manager_);
+  }
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+typename BPlusTree<KeyType, ValueType, KeyComparator>::NodeWrapType
+BPlusTree<KeyType, ValueType, KeyComparator>::getLeftSibling(const BPlusTree::NodeWrapType &node,
+                                                             const BPlusTree::NodeWrapType &parent) {
+  const InternalPage *internalPage = parent.toInternalPage();
+  auto position = internalPage->ValueIndex(node.getPageId());
+  assert(position != 0);
+  return NodeWrapType(internalPage->ValueAt(position - 1), buffer_pool_manager_);
 }
 
 // template <typename KeyType, typename ValueType, typename KeyComparator>

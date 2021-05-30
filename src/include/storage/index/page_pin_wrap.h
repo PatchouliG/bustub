@@ -17,6 +17,7 @@ class NodePageWrap {
   using InternalPage = BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>;
 
  public:
+  NodePageWrap() {}
   NodePageWrap(page_id_t pageId, BufferPoolManager *bufferPoolManager) : bufferPoolManager(bufferPoolManager) {
     page = bufferPoolManager->FetchPage(pageId);
     assert(page != nullptr);
