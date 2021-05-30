@@ -250,8 +250,25 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
       auto position = parentPage->ValueIndex(leafPage->GetPageId());
       //      auto position = parentPage->Lookup(key, comparator_);
       assert(position < parentPage->GetSize() - 1 && position != -1);
-      parentPage->SetKeyAt(position+1, nextLeafPage->GetItem(0).first);
+      parentPage->SetKeyAt(position + 1, nextLeafPage->GetItem(0).first);
       return;
+    }
+  }
+  //  try left node
+  {
+    NodeWrapType parent = stack.top();
+    InternalPage *parentPage = parent.toMutableInternalPage();
+    auto position = parentPage->ValueIndex(leafPage->GetPageId());
+    if (position != 0) {
+      NodeWrapType left_node = NodeWrapType(parentPage->ValueAt(position - 1), buffer_pool_manager_);
+      const LeafPage *left_node_page = left_node.toLeafPage();
+      if (left_node_page->GetSize() > minSize(left_node)) {
+        LeafPage *left_node_page_muta = left_node.toMutableLeafPage();
+        left_node_page_muta->MoveLastToFrontOf(leafPage);
+        // set parent node
+        parentPage->SetKeyAt(position, leafPage->GetItem(0).first);
+        return;
+      }
     }
   }
 
