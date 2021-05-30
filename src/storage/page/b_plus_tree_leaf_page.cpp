@@ -187,10 +187,10 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient) {
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveFirstToEndOf(BPlusTreeLeafPage *recipient) {
   assert(GetSize() > 0);
-  recipient->array[GetSize()] = array[0];
+  recipient->array[recipient->GetSize()] = array[0];
+  recipient->IncreaseSize(1);
   memmove(array, array + 1, (GetSize() - 1) * sizeof(MappingType));
-  SetSize(GetSize() - 1);
-  recipient->SetSize(recipient->GetSize() + 1);
+  IncreaseSize(-1);
 }
 
 /*

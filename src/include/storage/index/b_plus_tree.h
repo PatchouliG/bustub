@@ -113,13 +113,15 @@ class BPlusTree {
 
   NodeWrapType createRoot(bool isFirst);
 
-  int getMaxSizeByType(BPlusTreePage *bPlusTreePage);
-  int getSize(BPlusTreePage *bPlusTreePage);
+  int getMaxSizeByType(const BPlusTreePage *bPlusTreePage);
+  int getSize(const BPlusTreePage *bPlusTreePage);
   NodeWrapType split(NodeWrapType &node_need_split);
   KeyType minKey(const NodeWrapType &nodeWrapType);
   void updateParentNode(const NodeWrapType &parent, NodeWrapType &a, NodeWrapType &b);
 
   NodeWrapType findLeaf(const KeyType &key);
+
+  int minSize(const NodeWrapType &node);
 
   // member variable
   std::string index_name_;

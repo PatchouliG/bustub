@@ -58,7 +58,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) {
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueIndex(const ValueType &value) const {
   //  todo need test
-  for (auto i = 1; i < GetSize(); ++i) {
+  for (auto i = 0; i < GetSize(); ++i) {
     if (array[i].second == value) {
       return i;
     }

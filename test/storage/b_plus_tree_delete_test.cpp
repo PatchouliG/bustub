@@ -170,4 +170,165 @@ TEST(BPlusTreeTests, DISABLED_DeleteTest2) {
   remove("test.db");
   remove("test.log");
 }
+
+ TEST(BPlusTreeTests, DeleteTestEmpty) {
+  std::string createStmt = "a bigint";
+  Schema *key_schema = ParseCreateStatement(createStmt);
+  GenericComparator<8> comparator(key_schema);
+
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
+  GenericKey<8> index_key;
+  // create transaction
+  Transaction *transaction = new Transaction(0);
+
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  index_key.SetFromInteger(0);
+  tree.Remove(index_key, transaction);
+}
+ TEST(BPlusTreeTests, DeleteTestNotFound) {
+  std::string createStmt = "a bigint";
+  Schema *key_schema = ParseCreateStatement(createStmt);
+  GenericComparator<8> comparator(key_schema);
+
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
+  GenericKey<8> index_key;
+  // create transaction
+  Transaction *transaction = new Transaction(0);
+
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  RID rid;
+
+  index_key.SetFromInteger(1);
+  tree.Insert(index_key, rid, transaction);
+  index_key.SetFromInteger(2);
+  tree.Remove(index_key, transaction);
+
+  tree.Print(bpm);
+}
+ TEST(BPlusTreeTests, DeleteTestRootIsLeaf) {
+  std::string createStmt = "a bigint";
+  Schema *key_schema = ParseCreateStatement(createStmt);
+  GenericComparator<8> comparator(key_schema);
+
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
+  GenericKey<8> index_key;
+  // create transaction
+  Transaction *transaction = new Transaction(0);
+
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  RID rid;
+
+  index_key.SetFromInteger(1);
+  tree.Insert(index_key, rid, transaction);
+  index_key.SetFromInteger(2);
+  tree.Insert(index_key, rid, transaction);
+  index_key.SetFromInteger(2);
+  tree.Remove(index_key, transaction);
+  index_key.SetFromInteger(1);
+  tree.Remove(index_key, transaction);
+
+  tree.Print(bpm);
+}
+
+ TEST(BPlusTreeTests, TestDisTributeToRight) {
+  std::stringstream buffer;
+  std::streambuf *oldCoutStreamBuf = std::cout.rdbuf();
+
+  std::cout.rdbuf(buffer.rdbuf());
+
+  std::string createStmt = "a bigint";
+  Schema *key_schema = ParseCreateStatement(createStmt);
+  GenericComparator<8> comparator(key_schema);
+
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
+  GenericKey<8> index_key;
+  // create transaction
+  Transaction *transaction = new Transaction(0);
+
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  RID rid;
+
+  index_key.SetFromInteger(1);
+  tree.Insert(index_key, rid, transaction);
+  index_key.SetFromInteger(2);
+  tree.Insert(index_key, rid, transaction);
+  index_key.SetFromInteger(2);
+  tree.Remove(index_key, transaction);
+  index_key.SetFromInteger(1);
+  tree.Remove(index_key, transaction);
+
+  tree.Print(bpm);
+
+  std::string text = buffer.str();  // text will now contain "Bla\n"
+  std::string s = "Leaf Page: 1 parent: -1 next: -1\n\n\n";
+  int checkRes = s.compare(text);
+  EXPECT_EQ(checkRes,0);
+  std::cout.rdbuf(oldCoutStreamBuf);
+}
+TEST(BPlusTreeTests, TestDisTributeToLeft) {
+  std::stringstream buffer;
+  std::streambuf *oldCoutStreamBuf = std::cout.rdbuf();
+
+  std::cout.rdbuf(buffer.rdbuf());
+
+  std::string createStmt = "a bigint";
+  Schema *key_schema = ParseCreateStatement(createStmt);
+  GenericComparator<8> comparator(key_schema);
+
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 4, 10);
+  GenericKey<8> index_key;
+  // create transaction
+  Transaction *transaction = new Transaction(0);
+
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  RID rid;
+
+  for (int i = 1; i <= 6; ++i) {
+    index_key.SetFromInteger(i);
+    tree.Insert(index_key, rid, transaction);
+  }
+
+  index_key.SetFromInteger(1);
+  tree.Remove(index_key);
+
+  index_key.SetFromInteger(3);
+  tree.Remove(index_key);
+
+  tree.Print(bpm);
+  std::string text = buffer.str();  // text will now contain "Bla\n"
+  std::string s = "Internal Page: 3 parent: -1\n0: 1,5: 2,\n\nLeaf Page: 1 parent: 3 next: 2\n2,4,\n\nLeaf Page: 2 parent: 3 next: -1\n5,6,\n\n";
+  int checkRes = s.compare(text);
+  EXPECT_EQ(checkRes,0);
+  std::cout.rdbuf(oldCoutStreamBuf);
+}
 }  // namespace bustub

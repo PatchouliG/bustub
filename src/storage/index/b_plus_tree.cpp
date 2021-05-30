@@ -208,7 +208,68 @@ INDEX_TEMPLATE_ARGUMENTS void BPLUSTREE_TYPE::InsertIntoParent(BPlusTreePage *ol
  * necessary.
  */
 INDEX_TEMPLATE_ARGUMENTS
-void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {}
+void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
+  if (root_page_id_ == INVALID_PAGE_ID) {
+    return;
+  }
+  //  find leaf to delete, store parent on path
+
+  std::stack<NodeWrapType> stack;
+  NodeWrapType current_node = NodeWrapType(root_page_id_, buffer_pool_manager_);
+  while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
+    const InternalPage *internalPage = current_node.toInternalPage();
+    auto page_id = internalPage->Lookup(key, comparator_);
+
+    //    todo check size
+    stack.push(current_node);
+    current_node = NodeWrapType(page_id, buffer_pool_manager_);
+  }
+  //  check leaf size
+  LeafPage *leafPage = current_node.toMutableLeafPage();
+  //  delete
+  leafPage->RemoveAndDeleteRecord(key, comparator_);
+
+  if (leafPage->GetSize() >= minSize(current_node)) {
+    return;
+  }
+  //  handle root
+  if (leafPage->IsRootPage()) {
+    assert(leafPage->GetSize() == 0);
+    root_page_id_ = INVALID_PAGE_ID;
+    return;
+  }
+  //  try redistribute ,return
+  if (leafPage->GetNextPageId() != INVALID_PAGE_ID) {
+    NodeWrapType nextNode(leafPage->GetNextPageId(), buffer_pool_manager_);
+    LeafPage *nextLeafPage = nextNode.toMutableLeafPage();
+    if (nextLeafPage->GetSize() > nextLeafPage->GetMinSize()) {
+      nextLeafPage->MoveFirstToEndOf(leafPage);
+      // set parent node
+      NodeWrapType parent = stack.top();
+      InternalPage *parentPage = parent.toMutableInternalPage();
+      auto position = parentPage->ValueIndex(leafPage->GetPageId());
+      //      auto position = parentPage->Lookup(key, comparator_);
+      assert(position < parentPage->GetSize() - 1 && position != -1);
+      parentPage->SetKeyAt(position+1, nextLeafPage->GetItem(0).first);
+      return;
+    }
+  }
+
+  //  if (leafPage.N)
+  //  merge
+  //  set key need  delete for parent
+  while (true) {
+    //    delete key
+    // check size
+    //  handle root
+    //  try redistribute ,return
+    //  merge
+    //  set key need  delete for parent
+
+    //    current_node = stack.top();
+    //    stack.pop();
+  }
+}  // namespace bustub
 
 /*
  * User needs to first find the sibling of input page. If sibling's size + input
@@ -525,7 +586,7 @@ NodePageWrap<KeyType, ValueType, KeyComparator> BPlusTree<KeyType, ValueType, Ke
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
-int BPlusTree<KeyType, ValueType, KeyComparator>::getMaxSizeByType(BPlusTreePage *bPlusTreePage) {
+int BPlusTree<KeyType, ValueType, KeyComparator>::getMaxSizeByType(const BPlusTreePage *bPlusTreePage) {
   if (bPlusTreePage->IsLeafPage()) {
     return leaf_max_size_;
   } else if (bPlusTreePage->GetPageType() == IndexPageType::INTERNAL_PAGE) {
@@ -535,7 +596,7 @@ int BPlusTree<KeyType, ValueType, KeyComparator>::getMaxSizeByType(BPlusTreePage
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
-int BPlusTree<KeyType, ValueType, KeyComparator>::getSize(BPlusTreePage *bPlusTreePage) {
+int BPlusTree<KeyType, ValueType, KeyComparator>::getSize(const BPlusTreePage *bPlusTreePage) {
   return bPlusTreePage->GetSize();
 }
 
@@ -553,8 +614,8 @@ template <typename KeyType, typename ValueType, typename KeyComparator>
 void BPlusTree<KeyType, ValueType, KeyComparator>::updateParentNode(const BPlusTree::NodeWrapType &parent,
                                                                     BPlusTree::NodeWrapType &a,
                                                                     BPlusTree::NodeWrapType &b) {
-  a.toBPlusTreePage()->SetParentPageId(parent.toBPlusTreePage()->GetPageId());
-  b.toBPlusTreePage()->SetParentPageId(parent.toBPlusTreePage()->GetPageId());
+  a.toMutableBPlusTreePage()->SetParentPageId(parent.toBPlusTreePage()->GetPageId());
+  b.toMutableBPlusTreePage()->SetParentPageId(parent.toBPlusTreePage()->GetPageId());
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
@@ -569,4 +630,20 @@ BPlusTree<KeyType, ValueType, KeyComparator>::findLeaf(const KeyType &key) {
   }
   return current_node;
 }
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+int BPlusTree<KeyType, ValueType, KeyComparator>::minSize(const BPlusTree::NodeWrapType &node) {
+  if (node.getPageId() == root_page_id_) {
+    return 0;
+  }
+  return node.toBPlusTreePage()->GetMinSize();
+}
+
+// template <typename KeyType, typename ValueType, typename KeyComparator>
+// int BPlusTree<KeyType, ValueType, KeyComparator>::minSize(const BPlusTreePage) {
+//    handle root node;
+//    return false;
+//  return 1;
+//}
+
 }  // namespace bustub

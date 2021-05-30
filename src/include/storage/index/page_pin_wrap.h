@@ -70,7 +70,11 @@ class NodePageWrap {
     is_dirty = true;
     return (InternalPage *)(page->GetData());
   }
-  BPlusTreePage *toBPlusTreePage() const { return (BPlusTreePage *)(page->GetData()); }
+  const BPlusTreePage *toBPlusTreePage() const { return (BPlusTreePage *)(page->GetData()); }
+  BPlusTreePage *toMutableBPlusTreePage() {
+    this->is_dirty = true;
+    return (BPlusTreePage *)(page->GetData());
+  }
 
   page_id_t getPageId() const { return page_id; }
   //  test only
