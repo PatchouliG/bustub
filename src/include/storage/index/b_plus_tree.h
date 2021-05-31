@@ -124,6 +124,12 @@ class BPlusTree {
   int minSize(const NodeWrapType &node);
   NodeWrapType getRightSibling(const NodeWrapType &node, const NodeWrapType &parent);
   NodeWrapType getLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
+  bool hasLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
+  bool hasRightSibling(const NodeWrapType &node, const NodeWrapType &parent);
+  void MoveFirstToEndOf(NodeWrapType &left, NodeWrapType &right);
+  void MoveLastToFrontOf(NodeWrapType &left, NodeWrapType &right);
+  void MoveAllTo(NodeWrapType left, NodeWrapType &right);
+  KeyType firstKey(const NodeWrapType &node);
 
   // member variable
   std::string index_name_;
