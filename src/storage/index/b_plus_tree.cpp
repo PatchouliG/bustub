@@ -127,6 +127,7 @@ bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
       assert(parentNodeWrap.getPageId() == current_node.toBPlusTreePage()->GetParentPageId());
       InternalPage *parentNode = parentNodeWrap.toMutableInternalPage();
       parentNode->InsertNodeAfter(current_node.getPageId(), min_key, right_node.getPageId());
+      updateParentNode(parentNodeWrap, current_node, right_node);
       current_node = parentNodeWrap;
     }
     //    next loop

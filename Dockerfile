@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM rastasheep/ubuntu-sshd:18.04
 CMD bash
 
 # Install Ubuntu packages.

@@ -117,6 +117,7 @@ From the repository directory, run these commands to create a Docker image and c
 ```
 $ docker build . -t bustub
 $ docker create -t -i --name bustub -v $(pwd):/bustub bustub bash
+ docker create -t -i --name bustub -v $(pwd):/bustub bustub bash
 ```
 
 This will create a Docker image and container. To run it, type:
