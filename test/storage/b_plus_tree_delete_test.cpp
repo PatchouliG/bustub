@@ -426,10 +426,11 @@ TEST(BPlusTreeTests, TestLeafMergeRight) {
   std::cout.rdbuf(oldCountStreamBuf);
 }
 
-TEST(BPlusTreeTests, TestInternalDistributeRight) {
-}
-}
+TEST(BPlusTreeTests, TestInternalDistributeRight) {}
 TEST(BPlusTreeTests, TestInternalDistributeLeft) {}
 
 TEST(BPlusTreeTests, TestInternalMergeRight) {}
-TEST(BPlusTreeTests, TestInternalMergeLeft) {}  // namespace bustub
+TEST(BPlusTreeTests, TestInternalMergeLeft) {}
+TEST(BPlusTreeTests, TestDeleteMutipleTime) {}
+// namespace bustub
+}  // namespace bustub
