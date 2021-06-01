@@ -39,7 +39,7 @@ class BPlusTreeInternalPage : public BPlusTreePage {
   void Init(page_id_t page_id, page_id_t parent_id = INVALID_PAGE_ID, int max_size = INTERNAL_PAGE_SIZE);
 
   KeyType KeyAt(int index) const;
-  int KeyIndex(const KeyType& key,const KeyComparator& comparator) const;
+  int KeyIndex(const KeyType &key, const KeyComparator &comparator) const;
   void SetKeyAt(int index, const KeyType &key);
   int ValueIndex(const ValueType &value) const;
   ValueType ValueAt(int index) const;
@@ -57,15 +57,17 @@ class BPlusTreeInternalPage : public BPlusTreePage {
                         BufferPoolManager *buffer_pool_manager);
   void MoveLastToFrontOf(BPlusTreeInternalPage *recipient, const KeyType &middle_key,
                          BufferPoolManager *buffer_pool_manager);
+  void MoveLastToFrontOf(BPlusTreeInternalPage *recipient);
+  void MoveFirstToEndOf(BPlusTreeInternalPage *recipient);
 
  private:
   void CopyNFrom(MappingType *items, int size, BufferPoolManager *buffer_pool_manager);
   void CopyLastFrom(const MappingType &pair, BufferPoolManager *buffer_pool_manager);
   void CopyFirstFrom(const MappingType &pair, BufferPoolManager *buffer_pool_manager);
-//  first key great or eq
-//  -1 not found
-//  int getPositionGTKey(const KeyType &keyType) const;
-//  int getPositionGTValue(const ValueType &valueType) const ;
+  //  first key great or eq
+  //  -1 not found
+  //  int getPositionGTKey(const KeyType &keyType) const;
+  //  int getPositionGTValue(const ValueType &valueType) const ;
   MappingType array[0];
 };
 }  // namespace bustub

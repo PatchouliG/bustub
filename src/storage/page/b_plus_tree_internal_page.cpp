@@ -244,6 +244,22 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveLastToFrontOf(BPlusTreeInternalPage *re
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::CopyFirstFrom(const MappingType &pair, BufferPoolManager *buffer_pool_manager) {}
 
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::MoveLastToFrontOf(BPlusTreeInternalPage *recipient) {
+  std::memmove(recipient->array + 1, recipient->array, sizeof(MappingType) * recipient->GetSize());
+  recipient->array[0] = array[GetSize() - 1];
+  recipient->IncreaseSize(1);
+  IncreaseSize(-1);
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::MoveFirstToEndOf(BPlusTreeInternalPage *recipient) {
+  recipient->array[recipient->GetSize() - 1] = array[0];
+  std::memmove(array, array + 1, sizeof(MappingType) * GetSize() - 1);
+  recipient->IncreaseSize(1);
+  IncreaseSize(-1);
+}
+
 // valuetype for internalNode should be page id_t
 template class BPlusTreeInternalPage<GenericKey<4>, page_id_t, GenericComparator<4>>;
 template class BPlusTreeInternalPage<GenericKey<8>, page_id_t, GenericComparator<8>>;
