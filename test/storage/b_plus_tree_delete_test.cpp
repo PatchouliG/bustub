@@ -171,7 +171,7 @@ TEST(BPlusTreeTests, DISABLED_DeleteTest2) {
   remove("test.log");
 }
 
- TEST(BPlusTreeTests, DeleteTestEmpty) {
+TEST(BPlusTreeTests, DeleteTestEmpty) {
   std::string createStmt = "a bigint";
   Schema *key_schema = ParseCreateStatement(createStmt);
   GenericComparator<8> comparator(key_schema);
@@ -191,7 +191,7 @@ TEST(BPlusTreeTests, DISABLED_DeleteTest2) {
   index_key.SetFromInteger(0);
   tree.Remove(index_key, transaction);
 }
- TEST(BPlusTreeTests, DeleteTestNotFound) {
+TEST(BPlusTreeTests, DeleteTestNotFound) {
   std::string createStmt = "a bigint";
   Schema *key_schema = ParseCreateStatement(createStmt);
   GenericComparator<8> comparator(key_schema);
@@ -217,7 +217,7 @@ TEST(BPlusTreeTests, DISABLED_DeleteTest2) {
 
   tree.Print(bpm);
 }
- TEST(BPlusTreeTests, DeleteTestRootIsLeaf) {
+TEST(BPlusTreeTests, DeleteTestRootIsLeaf) {
   std::string createStmt = "a bigint";
   Schema *key_schema = ParseCreateStatement(createStmt);
   GenericComparator<8> comparator(key_schema);
@@ -248,7 +248,7 @@ TEST(BPlusTreeTests, DISABLED_DeleteTest2) {
   tree.Print(bpm);
 }
 
- TEST(BPlusTreeTests, TestDeleteAll) {
+TEST(BPlusTreeTests, TestDeleteAll) {
   std::stringstream buffer;
   std::streambuf *oldCoutStreamBuf = std::cout.rdbuf();
 
@@ -286,10 +286,10 @@ TEST(BPlusTreeTests, DISABLED_DeleteTest2) {
   std::string text = buffer.str();  // text will now contain "Bla\n"
   std::string s = "Leaf Page: 1 parent: -1 next: -1\n\n\n";
   int checkRes = s.compare(text);
-  EXPECT_EQ(checkRes,0);
+  EXPECT_EQ(checkRes, 0);
   std::cout.rdbuf(oldCoutStreamBuf);
 }
- TEST(BPlusTreeTests, TestDisTributeFromRight) {
+TEST(BPlusTreeTests, TestDisTributeFromRight) {
   std::stringstream buffer;
   std::streambuf *oldCoutStreamBuf = std::cout.rdbuf();
 
@@ -326,12 +326,13 @@ TEST(BPlusTreeTests, DISABLED_DeleteTest2) {
 
   tree.Print(bpm);
   std::string text = buffer.str();  // text will now contain "Bla\n"
-  std::string s = "Internal Page: 3 parent: -1\n0: 1,5: 2,\n\nLeaf Page: 1 parent: 3 next: 2\n2,4,\n\nLeaf Page: 2 parent: 3 next: -1\n5,6,\n\n";
+  std::string s =
+      "Internal Page: 3 parent: -1\n0: 1,5: 2,\n\nLeaf Page: 1 parent: 3 next: 2\n2,4,\n\nLeaf Page: 2 parent: 3 next: "
+      "-1\n5,6,\n\n";
   int checkRes = s.compare(text);
-  EXPECT_EQ(checkRes,0);
+  EXPECT_EQ(checkRes, 0);
   std::cout.rdbuf(oldCoutStreamBuf);
 }
-
 
 TEST(BPlusTreeTests, TestDisTributeFromLeft) {
   std::stringstream buffer;
@@ -373,17 +374,19 @@ TEST(BPlusTreeTests, TestDisTributeFromLeft) {
 
   tree.Print(bpm);
   std::string text = buffer.str();  // text will now contain "Bla\n"
-  std::string s = "Internal Page: 3 parent: -1\n0: 1,1: 2,\n\nLeaf Page: 1 parent: 3 next: 2\n-1,0,\n\nLeaf Page: 2 parent: 3 next: -1\n1,4,\n\n";
+  std::string s =
+      "Internal Page: 3 parent: -1\n0: 1,1: 2,\n\nLeaf Page: 1 parent: 3 next: 2\n-1,0,\n\nLeaf Page: 2 parent: 3 "
+      "next: -1\n1,4,\n\n";
   int checkRes = s.compare(text);
   EXPECT_EQ(checkRes, 0);
 
   std::cout.rdbuf(oldCoutStreamBuf);
 }
 TEST(BPlusTreeTests, TestLeafMergeRight) {
-    std::stringstream buffer;
-    std::streambuf *oldCountStreamBuf = std::cout.rdbuf();
+  std::stringstream buffer;
+  std::streambuf *oldCountStreamBuf = std::cout.rdbuf();
 
-    std::cout.rdbuf(buffer.rdbuf());
+  std::cout.rdbuf(buffer.rdbuf());
 
   std::string createStmt = "a bigint";
   Schema *key_schema = ParseCreateStatement(createStmt);
@@ -415,13 +418,18 @@ TEST(BPlusTreeTests, TestLeafMergeRight) {
   tree.Remove(index_key);
 
   tree.Print(bpm);
-    std::string text = buffer.str();  // text will now contain "Bla\n"
-    std::string s = "Leaf Page: 1 parent: 3 next: 2\n0,1,\n\n";
-    int checkRes = s.compare(text);
-    EXPECT_EQ(checkRes, 0);
+  std::string text = buffer.str();  // text will now contain "Bla\n"
+  std::string s = "Leaf Page: 1 parent: 3 next: 2\n0,1,\n\n";
+  int checkRes = s.compare(text);
+  EXPECT_EQ(checkRes, 0);
 
-    std::cout.rdbuf(oldCountStreamBuf);
+  std::cout.rdbuf(oldCountStreamBuf);
 }
 
+TEST(BPlusTreeTests, TestInternalDistributeRight) {
+}
+}
+TEST(BPlusTreeTests, TestInternalDistributeLeft) {}
 
-}  // namespace bustub
+TEST(BPlusTreeTests, TestInternalMergeRight) {}
+TEST(BPlusTreeTests, TestInternalMergeLeft) {}  // namespace bustub
