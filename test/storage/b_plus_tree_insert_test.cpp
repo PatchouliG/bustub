@@ -141,10 +141,10 @@ TEST(BPlusTreeTests, InsertTest2) {
 }
 
 TEST(BPlusTreeTests, debug) {
-  //  std::stringstream buffer;
-  //  std::streambuf *oldCountStreamBuf = std::cout.rdbuf();
+  std::stringstream buffer;
+  std::streambuf *oldCountStreamBuf = std::cout.rdbuf();
 
-  //  std::cout.rdbuf(buffer.rdbuf());
+  std::cout.rdbuf(buffer.rdbuf());
 
   std::string createStmt = "a bigint";
   Schema *key_schema = ParseCreateStatement(createStmt);
@@ -153,7 +153,7 @@ TEST(BPlusTreeTests, debug) {
   DiskManager *disk_manager = new DiskManager("test.db");
   BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
   // create b+ tree
-  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 2, 2);
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 2, 3);
   GenericKey<8> index_key;
   // create transaction
   Transaction *transaction = new Transaction(0);
@@ -164,7 +164,7 @@ TEST(BPlusTreeTests, debug) {
 
   RID rid;
 
-  for (int i = 0; i <= 4; ++i) {
+  for (int i = 0; i <= 9; ++i) {
     index_key.SetFromInteger(i);
     tree.Insert(index_key, rid, transaction);
   }
@@ -177,12 +177,18 @@ TEST(BPlusTreeTests, debug) {
 
   tree.Print(bpm);
   tree.Draw(bpm, "pic");
-  //  std::string text = buffer.str();  // text will now contain "Bla\n"
-  //  std::string s = "Leaf Page: 1 parent: 3 next: 2\n0,1,\n\n";
-  //  int checkRes = s.compare(text);
-  //  EXPECT_EQ(checkRes, 0);
+  std::string text = buffer.str();  // text will now contain "Bla\n"
+  std::string s =
+      "Internal Page: 8 parent: -1\n0: 3,2: 7,4: 11,6: 14,\n\nInternal Page: 3 parent: 8\n0: 1,1: 2,\n\nLeaf Page: 1 "
+      "parent: 3 next: 2\n0,\n\nLeaf Page: 2 parent: 3 next: 4\n1,\n\nInternal Page: 7 parent: 8\n2: 4,3: 5,\n\nLeaf "
+      "Page: 4 parent: 7 next: 5\n2,\n\nLeaf Page: 5 parent: 7 next: 6\n3,\n\nInternal Page: 11 parent: 8\n4: 6,5: "
+      "9,\n\nLeaf Page: 6 parent: 11 next: 9\n4,\n\nLeaf Page: 9 parent: 11 next: 10\n5,\n\nInternal Page: 14 "
+      "parent: 8\n6: 10,7: 12,8: 13,\n\nLeaf Page: 10 parent: 14 next: 12\n6,\n\nLeaf Page: 12 parent: 14 next: "
+      "13\n7,\n\nLeaf Page: 13 parent: 14 next: -1\n8,9,\n\n";
+  int checkRes = s.compare(text);
+  EXPECT_EQ(checkRes, 0);
   //
-  //  std::cout.rdbuf(oldCountStreamBuf);
+  std::cout.rdbuf(oldCountStreamBuf);
 
   delete disk_manager;
   delete key_schema;
