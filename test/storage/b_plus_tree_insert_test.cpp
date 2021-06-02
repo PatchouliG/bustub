@@ -140,7 +140,7 @@ TEST(BPlusTreeTests, InsertTest2) {
   remove("test.log");
 }
 
-TEST(BPlusTreeTests, debug) {
+TEST(BPlusTreeTests, test_insert_in_order) {
   std::stringstream buffer;
   std::streambuf *oldCountStreamBuf = std::cout.rdbuf();
 
@@ -188,6 +188,54 @@ TEST(BPlusTreeTests, debug) {
   int checkRes = s.compare(text);
   EXPECT_EQ(checkRes, 0);
   //
+  std::cout.rdbuf(oldCountStreamBuf);
+
+  delete disk_manager;
+  delete key_schema;
+  delete bpm;
+  delete transaction;
+}
+
+TEST(BPlusTreeTests, test_insert_out_of_order) {
+  std::stringstream buffer;
+  std::streambuf *oldCountStreamBuf = std::cout.rdbuf();
+
+  std::cout.rdbuf(buffer.rdbuf());
+
+  std::string createStmt = "a bigint";
+  Schema *key_schema = ParseCreateStatement(createStmt);
+  GenericComparator<8> comparator(key_schema);
+
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 3, 3);
+  GenericKey<8> index_key;
+  // create transaction
+  Transaction *transaction = new Transaction(0);
+
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  RID rid;
+  std::vector v{1, 2, -1, 0, 9, 3, 6, 11, 8, 345, -34, 83, 50, 34};
+
+  for (size_t i = 0; i < v.size(); ++i) {
+    index_key.SetFromInteger(v[i]);
+    tree.Insert(index_key, rid, transaction);
+  }
+
+  tree.Print(bpm);
+//  tree.Draw(bpm, "pic");
+  std::string text = buffer.str();  // text will now contain "Bla\n"
+  std::string s =
+      "Internal Page: 8 parent: -1\n0: 3,3: 7,\n\nInternal Page: 3 parent: 8\n0: 1,1: 2,\n\nLeaf Page: 1 parent: 3 "
+      "next: 2\n-34,-1,0,\n\nLeaf Page: 2 parent: 3 next: 4\n1,2,\n\nInternal Page: 7 parent: 8\n3: 4,9: 5,34: 9,83: "
+      "6,\n\nLeaf Page: 4 parent: 7 next: 5\n3,6,8,\n\nLeaf Page: 5 parent: 7 next: 9\n9,11,\n\nLeaf Page: 9 parent: 7 "
+      "next: -1\n34,50,\n\nLeaf Page: 6 parent: 7 next: -1\n83,345,\n\n";
+  int checkRes = s.compare(text);
+  EXPECT_EQ(checkRes, 0);
   std::cout.rdbuf(oldCountStreamBuf);
 
   delete disk_manager;
