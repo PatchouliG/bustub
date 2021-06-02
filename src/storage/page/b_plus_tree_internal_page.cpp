@@ -156,6 +156,14 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveHalfTo(BPlusTreeInternalPage *recipient
   std::memcpy(recipient->array, array + position, sizeof(MappingType) * (move_number));
   recipient->SetSize(move_number);
   SetSize(position);
+  recipient->array[0].first = KeyType();
+  for (auto i = 0; i < recipient->GetSize(); ++i) {
+    auto child_id = recipient->array[i].second;
+    auto child = (BPlusTreePage *)(buffer_pool_manager->FetchPage(child_id)->GetData());
+    child->SetParentPageId(recipient->GetPageId());
+  }
+
+  //
   //    page_id_t pageId;
   //    Page *page = buffer_pool_manager->NewPage(&pageId);
   //    recipient = (BPlusTreeInternalPage *)(page->GetData());

@@ -621,7 +621,7 @@ int BPlusTree<KeyType, ValueType, KeyComparator>::getMaxSizeByType(const BPlusTr
   if (bPlusTreePage->IsLeafPage()) {
     return leaf_max_size_;
   } else if (bPlusTreePage->GetPageType() == IndexPageType::INTERNAL_PAGE) {
-    return internal_max_size_;
+    return internal_max_size_+1;
   }
   assert(false);
 }
