@@ -190,6 +190,11 @@ TEST(BPlusTreeTests, DeleteTestEmpty) {
 
   index_key.SetFromInteger(0);
   tree.Remove(index_key, transaction);
+
+  delete disk_manager;
+  delete key_schema;
+  delete bpm;
+  delete transaction;
 }
 TEST(BPlusTreeTests, DeleteTestNotFound) {
   std::string createStmt = "a bigint";
@@ -216,6 +221,11 @@ TEST(BPlusTreeTests, DeleteTestNotFound) {
   tree.Remove(index_key, transaction);
 
   tree.Print(bpm);
+
+  delete disk_manager;
+  delete key_schema;
+  delete bpm;
+  delete transaction;
 }
 TEST(BPlusTreeTests, DeleteTestRootIsLeaf) {
   std::string createStmt = "a bigint";
@@ -246,6 +256,11 @@ TEST(BPlusTreeTests, DeleteTestRootIsLeaf) {
   tree.Remove(index_key, transaction);
 
   tree.Print(bpm);
+
+  delete disk_manager;
+  delete key_schema;
+  delete bpm;
+  delete transaction;
 }
 
 TEST(BPlusTreeTests, TestDeleteAll) {
@@ -288,6 +303,11 @@ TEST(BPlusTreeTests, TestDeleteAll) {
   int checkRes = s.compare(text);
   EXPECT_EQ(checkRes, 0);
   std::cout.rdbuf(oldCoutStreamBuf);
+
+  delete disk_manager;
+  delete key_schema;
+  delete bpm;
+  delete transaction;
 }
 TEST(BPlusTreeTests, TestDisTributeFromRight) {
   std::stringstream buffer;
@@ -332,6 +352,11 @@ TEST(BPlusTreeTests, TestDisTributeFromRight) {
   int checkRes = s.compare(text);
   EXPECT_EQ(checkRes, 0);
   std::cout.rdbuf(oldCoutStreamBuf);
+
+  delete disk_manager;
+  delete key_schema;
+  delete bpm;
+  delete transaction;
 }
 
 TEST(BPlusTreeTests, TestDisTributeFromLeft) {
@@ -381,6 +406,11 @@ TEST(BPlusTreeTests, TestDisTributeFromLeft) {
   EXPECT_EQ(checkRes, 0);
 
   std::cout.rdbuf(oldCoutStreamBuf);
+
+  delete disk_manager;
+  delete key_schema;
+  delete bpm;
+  delete transaction;
 }
 TEST(BPlusTreeTests, TestLeafMergeRight) {
   std::stringstream buffer;
@@ -424,6 +454,11 @@ TEST(BPlusTreeTests, TestLeafMergeRight) {
   EXPECT_EQ(checkRes, 0);
 
   std::cout.rdbuf(oldCountStreamBuf);
+
+  delete disk_manager;
+  delete key_schema;
+  delete bpm;
+  delete transaction;
 }
 
 TEST(BPlusTreeTests, TestInternalDistributeRight) {}

@@ -160,9 +160,9 @@ bool BufferPoolManager::DeletePageImpl(page_id_t page_id) {
     return false;
   }
   // 3.   Otherwise, P can be deleted. Remove P from the page table, reset its metadata and return it to the free list.
+  free_list_.push_back(find_res->second);
   page_table_.erase(page_id);
   page->ResetMemory();
-  free_list_.push_back(find_res->second);
   return false;
 }
 

@@ -17,3 +17,6 @@ RUN apt-get -y update && \
       pkg-config \
       valgrind \
       zlib1g-dev
+
+EXPOSE 22
+CMD    ["/usr/sbin/sshd", "-D"]

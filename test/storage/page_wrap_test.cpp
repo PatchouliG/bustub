@@ -43,5 +43,9 @@ TEST(BPlusTreeTests, test_page_wrap_pin_count) {
   EXPECT_EQ(a_page->GetPinCount(), 0);
   EXPECT_EQ(b_page->GetPinCount(), 0);
 
+  delete key_schema;
+  delete disk_manager;
+  delete bpm;
+
 }  // namespace bustu
 }  // namespace bustub
