@@ -246,7 +246,7 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
     if (hasRightSibling(current_node, parent)) {
       NodeWrapType rightNode = getRightSibling(current_node, parent);
       if (rightNode.toBPlusTreePage()->GetSize() > minSize(rightNode)) {
-        MoveFirstToEndOf( current_node,rightNode);
+        MoveFirstToEndOf(current_node, rightNode);
         // set parent node
         InternalPage *parentPage = parent.toMutableInternalPage();
         auto position = parentPage->ValueIndex(current_node.getPageId());
@@ -621,7 +621,7 @@ int BPlusTree<KeyType, ValueType, KeyComparator>::getMaxSizeByType(const BPlusTr
   if (bPlusTreePage->IsLeafPage()) {
     return leaf_max_size_;
   } else if (bPlusTreePage->GetPageType() == IndexPageType::INTERNAL_PAGE) {
-    return internal_max_size_+1;
+    return internal_max_size_ + 1;
   }
   assert(false);
 }
@@ -637,7 +637,7 @@ KeyType BPlusTree<KeyType, ValueType, KeyComparator>::minKey(const BPlusTree::No
     return nodeWrapType.toLeafPage()->KeyAt(0);
   } else {
     assert(nodeWrapType.getIndexPageType() == IndexPageType::INTERNAL_PAGE);
-//    todo
+    //    todo
     return nodeWrapType.toInternalPage()->KeyAt(0);
   }
 }
@@ -714,7 +714,12 @@ template <typename KeyType, typename ValueType, typename KeyComparator>
 bool BPlusTree<KeyType, ValueType, KeyComparator>::hasRightSibling(const BPlusTree::NodeWrapType &node,
                                                                    const BPlusTree::NodeWrapType &parent) {
   if (node.getIndexPageType() == IndexPageType::LEAF_PAGE) {
-    return node.toLeafPage()->GetNextPageId() != INVALID_PAGE_ID;
+    auto next_page_id = node.toLeafPage()->GetNextPageId();
+    if (next_page_id == INVALID_PAGE_ID) {
+      return false;
+    }
+    NodeWrapType next_page = BPlusTree::NodeWrapType(next_page_id, buffer_pool_manager_);
+    return next_page.toLeafPage()->GetParentPageId() == node.toLeafPage()->GetParentPageId();
   } else {
     const InternalPage *page = parent.toInternalPage();
     page_id_t position = page->ValueIndex(node.getPageId());
