@@ -122,6 +122,7 @@ class BPlusTree {
   NodeWrapType findLeaf(const KeyType &key);
 
   int minSize(const NodeWrapType &node);
+  bool sizeMoreThanMin(const NodeWrapType &node);
   NodeWrapType getRightSibling(const NodeWrapType &node, const NodeWrapType &parent);
   NodeWrapType getLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
   bool hasLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
@@ -130,6 +131,9 @@ class BPlusTree {
   void MoveLastToFrontOf(NodeWrapType &left, NodeWrapType &right);
   void MoveAllTo(NodeWrapType left, NodeWrapType &right);
   KeyType firstKey(const NodeWrapType &node);
+
+  void MoveFirstToEndOf(LeafPage *left, LeafPage *right, InternalPage *parent);
+  void MoveLastToFrontOf(LeafPage *left, LeafPage *right, InternalPage *parent);
 
   // member variable
   std::string index_name_;

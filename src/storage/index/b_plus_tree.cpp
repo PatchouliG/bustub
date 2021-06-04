@@ -240,65 +240,105 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
     return;
   }
 
+  //  handle leaf
+  NodeWrapType parent = stack.top();
+  //  try redistribute
+  if (hasRightSibling(current_node, parent) && sizeMoreThanMin(getRightSibling(current_node, parent))) {
+    auto right = getRightSibling(current_node, parent);
+    MoveFirstToEndOf(current_node.toMutableLeafPage(), right.toMutableLeafPage(), parent.toMutableInternalPage());
+    InternalPage *internalPage = parent.toMutableInternalPage();
+    auto position = internalPage->ValueIndex(right.getPageId());
+    internalPage->SetKeyAt(position, right.toLeafPage()->KeyAt(0));
+    return;
+  }
+  if (sizeMoreThanMin(getLeftSibling(current_node, parent))) {
+    auto left = getLeftSibling(current_node, parent);
+    MoveLastToFrontOf(current_node.toMutableLeafPage(), left.toMutableLeafPage(), parent.toMutableInternalPage());
+    InternalPage *internalPage = parent.toMutableInternalPage();
+    auto position = internalPage->ValueIndex(current_node.getPageId());
+    internalPage->SetKeyAt(position, current_node.toLeafPage()->KeyAt(0));
+    return;
+  }
+  NodeWrapType leftChild, rightChile;
+  //    merge
+  if (hasRightSibling(current_node, parent)) {
+    NodePageWrap right = getRightSibling(current_node, parent);
+    //    todo
+
+    leftChild = current_node, rightChile = current_node;
+  } else {
+    NodeWrapType right = getLeftSibling(current_node, parent);
+    //    todo
+    leftChild = current_node, rightChile = right;
+  }
+
   while (true) {
-    NodeWrapType parent = stack.top();
-    //  try redistribute ,return
-    if (hasRightSibling(current_node, parent)) {
-      NodeWrapType rightNode = getRightSibling(current_node, parent);
-      if (rightNode.toBPlusTreePage()->GetSize() > minSize(rightNode)) {
-        MoveFirstToEndOf(current_node, rightNode);
-        // set parent node
-        InternalPage *parentPage = parent.toMutableInternalPage();
-        auto position = parentPage->ValueIndex(current_node.getPageId());
-        assert(position < parentPage->GetSize() - 1 && position != -1);
-        parentPage->SetKeyAt(position + 1, firstKey(rightNode));
-        return;
-      }
-    }
-    //  try left node
-    if (hasLeftSibling(current_node, parent)) {
-      NodeWrapType left_node = getLeftSibling(current_node, parent);
-      if (left_node.toBPlusTreePage()->GetSize() > minSize(left_node)) {
-        MoveLastToFrontOf(left_node, current_node);
-        // set parent node
-        auto position = parent.toInternalPage()->ValueIndex(current_node.getPageId());
-        parent.toMutableInternalPage()->SetKeyAt(position, firstKey(current_node));
-        return;
-      }
-    }
+    //    if is leaf
+    //    try redistribute from right
+    //    try redistribute from left
+    //    merge right
+    //    merge left
 
-    KeyType keyNeedDelete;
-    NodeWrapType resultNode;
-    //  merge right
-    if (hasRightSibling(current_node, parent)) {
-      NodeWrapType rightNode = getRightSibling(current_node, parent);
-      MoveAllTo(current_node, rightNode);
-      keyNeedDelete = firstKey(rightNode);
-      resultNode = current_node;
-      buffer_pool_manager_->DeletePage(rightNode.getPageId());
-      //    merge left, must has left sibling
-    } else {
-      NodeWrapType leftNode = getLeftSibling(current_node, parent);
-      MoveAllTo(leftNode, current_node);
-      keyNeedDelete = firstKey(current_node);
-      resultNode = leftNode;
-      buffer_pool_manager_->DeletePage(current_node.getPageId());
-    }
+    //    handle internal
+    //    handle rootk
 
-    InternalPage *parentPage = parent.toMutableInternalPage();
-    auto position = parentPage->KeyIndex(keyNeedDelete, comparator_);
-    if (position == -1) {
-      position = parentPage->GetSize() - 1;
-    }
-    parentPage->Remove(position - 1);
-    //    handle root
-    if (parentPage->GetPageId() == root_page_id_ && parentPage->GetSize() == 1) {
-      buffer_pool_manager_->DeletePage(parentPage->GetPageId());
-      root_page_id_ = resultNode.getPageId();
-      return;
-    }
-    current_node = parent;
-    stack.pop();
+    //    //  try redistribute ,return
+    //    if (hasRightSibling(current_node, parent)) {
+    //      NodeWrapType rightNode = getRightSibling(current_node, parent);
+    //      if (rightNode.toBPlusTreePage()->GetSize() > minSize(rightNode)) {
+    //        MoveFirstToEndOf(current_node, rightNode);
+    //        // set parent node
+    //        InternalPage *parentPage = parent.toMutableInternalPage();
+    //        auto position = parentPage->ValueIndex(current_node.getPageId());
+    //        assert(position < parentPage->GetSize() - 1 && position != -1);
+    //        parentPage->SetKeyAt(position + 1, firstKey(rightNode));
+    //        return;
+    //      }
+    //    }
+    //    //  try left node
+    //    if (hasLeftSibling(current_node, parent)) {
+    //      NodeWrapType left_node = getLeftSibling(current_node, parent);
+    //      if (left_node.toBPlusTreePage()->GetSize() > minSize(left_node)) {
+    //        MoveLastToFrontOf(left_node, current_node);
+    //        // set parent node
+    //        auto position = parent.toInternalPage()->ValueIndex(current_node.getPageId());
+    //        parent.toMutableInternalPage()->SetKeyAt(position, firstKey(current_node));
+    //        return;
+    //      }
+    //    }
+    //
+    //    KeyType keyNeedDelete;
+    //    NodeWrapType resultNode;
+    //    //  merge right
+    //    if (hasRightSibling(current_node, parent)) {
+    //      NodeWrapType rightNode = getRightSibling(current_node, parent);
+    //      MoveAllTo(current_node, rightNode);
+    //      keyNeedDelete = firstKey(rightNode);
+    //      resultNode = current_node;
+    //      buffer_pool_manager_->DeletePage(rightNode.getPageId());
+    //      //    merge left, must has left sibling
+    //    } else {
+    //      NodeWrapType leftNode = getLeftSibling(current_node, parent);
+    //      MoveAllTo(leftNode, current_node);
+    //      keyNeedDelete = firstKey(current_node);
+    //      resultNode = leftNode;
+    //      buffer_pool_manager_->DeletePage(current_node.getPageId());
+    //    }
+    //
+    //    InternalPage *parentPage = parent.toMutableInternalPage();
+    //    auto position = parentPage->KeyIndex(keyNeedDelete, comparator_);
+    //    if (position == -1) {
+    //      position = parentPage->GetSize() - 1;
+    //    }
+    //    parentPage->Remove(position - 1);
+    //    //    handle root
+    //    if (parentPage->GetPageId() == root_page_id_ && parentPage->GetSize() == 1) {
+    //      buffer_pool_manager_->DeletePage(parentPage->GetPageId());
+    //      root_page_id_ = resultNode.getPageId();
+    //      return;
+    //    }
+    //    current_node = parent;
+    //    stack.pop();
   }
 }  // namespace bustub
 
