@@ -448,8 +448,9 @@ TEST(BPlusTreeTests, TestLeafMergeRight) {
   tree.Remove(index_key);
 
   tree.Print(bpm);
+  tree.Draw(bpm,"pic");
   std::string text = buffer.str();  // text will now contain "Bla\n"
-  std::string s = "Leaf Page: 1 parent: 3 next: 2\n0,1,\n\n";
+  std::string s = "Leaf Page: 1 parent: 3 next: -1\n0,1,3,\n\n";
   int checkRes = s.compare(text);
   EXPECT_EQ(checkRes, 0);
 

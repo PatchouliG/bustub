@@ -246,33 +246,85 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   if (hasRightSibling(current_node, parent) && sizeMoreThanMin(getRightSibling(current_node, parent))) {
     auto right = getRightSibling(current_node, parent);
     MoveFirstToEndOf(current_node.toMutableLeafPage(), right.toMutableLeafPage(), parent.toMutableInternalPage());
-    InternalPage *internalPage = parent.toMutableInternalPage();
-    auto position = internalPage->ValueIndex(right.getPageId());
-    internalPage->SetKeyAt(position, right.toLeafPage()->KeyAt(0));
+    //    InternalPage *internalPage = parent.toMutableInternalPage();
+    //    auto position = internalPage->ValueIndex(right.getPageId());
+    //    auto position = parentPosition(parent.toInternalPage(), right.getPageId());
+    //    internalPage->SetKeyAt(position, right.toLeafPage()->KeyAt(0));
     return;
   }
-  if (sizeMoreThanMin(getLeftSibling(current_node, parent))) {
+  if (hasLeftSibling(current_node, parent) && sizeMoreThanMin(getLeftSibling(current_node, parent))) {
     auto left = getLeftSibling(current_node, parent);
-    MoveLastToFrontOf(current_node.toMutableLeafPage(), left.toMutableLeafPage(), parent.toMutableInternalPage());
-    InternalPage *internalPage = parent.toMutableInternalPage();
-    auto position = internalPage->ValueIndex(current_node.getPageId());
-    internalPage->SetKeyAt(position, current_node.toLeafPage()->KeyAt(0));
+    MoveLastToFrontOf(left.toMutableLeafPage(), current_node.toMutableLeafPage(), parent.toMutableInternalPage());
+    //    InternalPage *internalPage = parent.toMutableInternalPage();
+    //    auto position = internalPage->ValueIndex(current_node.getPageId());
+    //    auto position = parentPosition(parent.toInternalPage(), current_node.getPageId());
+    //    internalPage->SetKeyAt(position, current_node.toLeafPage()->KeyAt(0));
     return;
   }
-  NodeWrapType leftChild, rightChile;
   //    merge
-  if (hasRightSibling(current_node, parent)) {
-    NodePageWrap right = getRightSibling(current_node, parent);
-    //    todo
-
-    leftChild = current_node, rightChile = current_node;
+  page_id_t leftChildPageId;
+  int position;
+  if (hasRightSibling(current_node, parent) && sizeMoreThanMin(getRightSibling(current_node, parent))) {
+    NodeWrapType right = getRightSibling(current_node, parent);
+    leftChildPageId = current_node.getPageId();
+    position = parentPosition(parent.toInternalPage(), right.getPageId());
+    mergeLeaf(current_node.toMutableLeafPage(), right.toMutableLeafPage());
   } else {
-    NodeWrapType right = getLeftSibling(current_node, parent);
-    //    todo
-    leftChild = current_node, rightChile = right;
+    NodeWrapType left = getLeftSibling(current_node, parent);
+    leftChildPageId = left.getPageId();
+    position = parentPosition(parent.toInternalPage(), current_node.getPageId());
+    mergeLeaf(left.toMutableLeafPage(), current_node.toMutableLeafPage());
   }
+
+  //  remove parent index
+  InternalPage *internalPage = parent.toMutableInternalPage();
+  internalPage->Remove(position);
+  internalPage->SetValueAt(position - 1, leftChildPageId);
 
   while (true) {
+    current_node = stack.top();
+    if (sizeMoreThanMin(current_node)) {
+      return;
+    }
+
+    //    handle root
+    //    need test
+    if (current_node.toInternalPage()->IsRootPage()) {
+      buffer_pool_manager_->DeletePage(parent.getPageId());
+      root_page_id_ = leftChildPageId;
+      return;
+    }
+    stack.pop();
+    parent = stack.top();
+
+    if (hasRightSibling(current_node, parent) && sizeMoreThanMin(getRightSibling(current_node, parent))) {
+      NodeWrapType right = getRightSibling(current_node, parent);
+      InternalPage *rightNode = right.toMutableInternalPage();
+      InternalPage *parentNode = parent.toMutableInternalPage();
+      auto popRes = rightNode->PopFirst();
+      position = parentPosition(parentNode, rightNode->GetPageId());
+      //      MoveFirstToEndOf(current_node.toMutableInternalPage(), right.toMutableInternalPage(),
+      //                       parent.toMutableInternalPage());
+      auto parentKey = parentNode->KeyAt(position);
+      parentNode->SetKeyAt(position, popRes.first);
+      current_node.toMutableInternalPage()->PushLast(popRes);
+      NodeWrapType child = NodeWrapType(popRes.second, buffer_pool_manager_);
+      child.toMutableBPlusTreePage()->SetParentPageId(current_node.getPageId());
+//      todo here
+
+      return;
+    }
+    if (hasLeftSibling(current_node, parent)) {
+      auto left = getLeftSibling(current_node, parent);
+      MoveFirstToEndOf(left.toMutableInternalPage(), current_node.toMutableInternalPage(),
+                       parent.toMutableInternalPage());
+      return;
+    }
+    //        todo dev
+    return;
+
+    //    redistribute
+
     //    if is leaf
     //    try redistribute from right
     //    try redistribute from left
@@ -340,7 +392,7 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
     //    current_node = parent;
     //    stack.pop();
   }
-}  // namespace bustub
+}
 
 /*
  * User needs to first find the sibling of input page. If sibling's size + input
@@ -766,26 +818,26 @@ bool BPlusTree<KeyType, ValueType, KeyComparator>::hasRightSibling(const BPlusTr
     return position != page->GetSize() - 1;
   }
 }
-template <typename KeyType, typename ValueType, typename KeyComparator>
-void BPlusTree<KeyType, ValueType, KeyComparator>::MoveFirstToEndOf(BPlusTree::NodeWrapType &left,
-                                                                    BPlusTree::NodeWrapType &right) {
-  assert(left.getIndexPageType() == right.getIndexPageType());
-  if (left.getIndexPageType() == IndexPageType::LEAF_PAGE) {
-    right.toMutableLeafPage()->MoveFirstToEndOf(left.toMutableLeafPage());
-  } else {
-    right.toMutableInternalPage()->MoveFirstToEndOf(left.toMutableInternalPage());
-  }
-}
-template <typename KeyType, typename ValueType, typename KeyComparator>
-void BPlusTree<KeyType, ValueType, KeyComparator>::MoveLastToFrontOf(BPlusTree::NodeWrapType &left,
-                                                                     BPlusTree::NodeWrapType &right) {
-  assert(left.getIndexPageType() == right.getIndexPageType());
-  if (left.getIndexPageType() == IndexPageType::LEAF_PAGE) {
-    left.toMutableLeafPage()->MoveLastToFrontOf(right.toMutableLeafPage());
-  } else {
-    left.toMutableInternalPage()->MoveLastToFrontOf(right.toMutableInternalPage());
-  }
-}
+// template <typename KeyType, typename ValueType, typename KeyComparator>
+// void BPlusTree<KeyType, ValueType, KeyComparator>::MoveFirstToEndOf(BPlusTree::NodeWrapType &left,
+//                                                                    BPlusTree::NodeWrapType &right) {
+//  assert(left.getIndexPageType() == right.getIndexPageType());
+//  if (left.getIndexPageType() == IndexPageType::LEAF_PAGE) {
+//    right.toMutableLeafPage()->MoveFirstToEndOf(left.toMutableLeafPage());
+//  } else {
+//    right.toMutableInternalPage()->MoveFirstToEndOf(left.toMutableInternalPage());
+//  }
+//}
+// template <typename KeyType, typename ValueType, typename KeyComparator>
+// void BPlusTree<KeyType, ValueType, KeyComparator>::MoveLastToFrontOf(BPlusTree::NodeWrapType &left,
+//                                                                     BPlusTree::NodeWrapType &right) {
+//  assert(left.getIndexPageType() == right.getIndexPageType());
+//  if (left.getIndexPageType() == IndexPageType::LEAF_PAGE) {
+//    left.toMutableLeafPage()->MoveLastToFrontOf(right.toMutableLeafPage());
+//  } else {
+//    left.toMutableInternalPage()->MoveLastToFrontOf(right.toMutableInternalPage());
+//  }
+//}
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 void BPlusTree<KeyType, ValueType, KeyComparator>::MoveAllTo(BPlusTree::NodeWrapType left,
@@ -803,4 +855,62 @@ KeyType BPlusTree<KeyType, ValueType, KeyComparator>::firstKey(const BPlusTree::
   }
 }
 
+template <typename KeyType, typename ValueType, typename KeyComparator>
+bool BPlusTree<KeyType, ValueType, KeyComparator>::sizeMoreThanMin(const BPlusTree::NodeWrapType &node) {
+  if (node.toBPlusTreePage()->IsRootPage()) {
+    return node.toBPlusTreePage()->GetSize() > 1;
+  }
+  if (node.getIndexPageType() == IndexPageType::LEAF_PAGE) {
+    return node.toLeafPage()->GetSize() > minSize(node);
+  } else {
+    return node.toInternalPage()->GetSize() > minSize(node);
+  }
+}
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::MoveFirstToEndOf(BPlusTree::LeafPage *left,
+                                                                    BPlusTree::LeafPage *right,
+                                                                    BPlusTree::InternalPage *parent) {
+  right->MoveFirstToEndOf(left);
+  auto position = parent->ValueIndex(right->GetPageId());
+  parent->SetKeyAt(position, right->KeyAt(0));
+}
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::MoveLastToFrontOf(BPlusTree::LeafPage *left,
+                                                                     BPlusTree::LeafPage *right,
+                                                                     BPlusTree::InternalPage *parent) {
+  left->MoveLastToFrontOf(right);
+  auto position = parent->ValueIndex(right->GetPageId());
+  parent->SetKeyAt(position, right->KeyAt(0));
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+int BPlusTree<KeyType, ValueType, KeyComparator>::parentPosition(const BPlusTree::InternalPage *parent,
+                                                                 page_id_t child_page_id) {
+  return parent->ValueIndex(child_page_id);
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::mergeLeaf(BPlusTree::LeafPage *left, BPlusTree::LeafPage *right) {
+  right->MoveAllTo(left);
+  buffer_pool_manager_->DeletePage(right->GetPageId());
+}
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::mergeInternal(BPlusTree::InternalPage *left,
+                                                                 BPlusTree::InternalPage *right,
+                                                                 BPlusTree::InternalPage *parent) {
+  auto position = parentPosition(parent, right->GetPageId());
+  auto midKey = parent->KeyAt(position);
+  parent->Remove(position);
+  right->MoveAllTo(left, midKey, buffer_pool_manager_);
+  buffer_pool_manager_->DeletePage(right->GetPageId());
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::MoveFirstToEndOf(BPlusTree::InternalPage *left,
+                                                                    BPlusTree::InternalPage *right,
+                                                                    BPlusTree::InternalPage *parent) {}
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::MoveLastToFrontOf(BPlusTree::InternalPage *left,
+                                                                     BPlusTree::InternalPage *right,
+                                                                     BPlusTree::InternalPage *parent) {}
 }  // namespace bustub

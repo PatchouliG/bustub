@@ -210,8 +210,8 @@ INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveLastToFrontOf(BPlusTreeLeafPage *recipient) {
   memmove(recipient->array + 1, recipient->array, GetSize() * sizeof(MappingType));
   recipient->array[0] = array[GetSize() - 1];
-  recipient->SetSize(recipient->GetSize() + 1);
-  SetSize(GetSize() - 1);
+  recipient->IncreaseSize(1);
+  IncreaseSize(-1);
 }
 
 /*

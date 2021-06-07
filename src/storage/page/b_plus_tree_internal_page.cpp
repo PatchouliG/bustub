@@ -16,6 +16,7 @@
 #include "storage/page/b_plus_tree_internal_page.h"
 
 namespace bustub {
+
 /*****************************************************************************
  * HELPER METHODS AND UTILITIES
  *****************************************************************************/
@@ -156,8 +157,8 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveHalfTo(BPlusTreeInternalPage *recipient
   std::memcpy(recipient->array, array + position, sizeof(MappingType) * (move_number));
   recipient->SetSize(move_number);
   SetSize(position);
-//  todo
-//  recipient->array[0].first = KeyType();
+  //  todo
+  //  recipient->array[0].first = KeyType();
   for (auto i = 0; i < recipient->GetSize(); ++i) {
     auto child_id = recipient->array[i].second;
     auto child = (BPlusTreePage *)(buffer_pool_manager->FetchPage(child_id)->GetData());
@@ -211,7 +212,20 @@ ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::RemoveAndReturnOnlyChild() { return IN
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveAllTo(BPlusTreeInternalPage *recipient, const KeyType &middle_key,
-                                               BufferPoolManager *buffer_pool_manager) {}
+                                               BufferPoolManager *buffer_pool_manager) {
+  auto firstChild = array[0].second;
+  recipient->array[recipient->GetSize()] = std::make_pair(middle_key, firstChild);
+  recipient->IncreaseSize(1);
+  std::memmove(&recipient->array[recipient->GetSize()], array, sizeof(MappingType) * GetSize());
+  //  set parent to recipient
+  for (auto i = 0; i < GetSize(); ++i) {
+    auto childPageId = array[i].second;
+    Page *page = (buffer_pool_manager->FetchPage(childPageId));
+    auto *childPage = (BPlusTreePage *)(page->GetData());
+    childPage->SetParentPageId(recipient->GetPageId());
+    buffer_pool_manager->UnpinPage(childPageId, true);
+  }
+}
 
 /*****************************************************************************
  * REDISTRIBUTE
@@ -268,6 +282,12 @@ void BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::MoveFirstToEndOf(
   recipient->IncreaseSize(1);
   IncreaseSize(-1);
 }
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::SetValueAt(int index, const ValueType &value) {
+  array[index].second = value;
+}
+
 
 // valuetype for internalNode should be page id_t
 template class BPlusTreeInternalPage<GenericKey<4>, page_id_t, GenericComparator<4>>;
