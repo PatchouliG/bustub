@@ -288,6 +288,20 @@ void BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::SetValueAt(int in
   array[index].second = value;
 }
 
+template <typename KeyType, typename ValueType, typename KeyComparator>
+std::pair<KeyType, ValueType> BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::PopFirst() {
+  assert(GetSize() > GetMinSize());
+  auto res = std::make_pair(array[1].first, array[0].second);
+  std::memmove(array, array + 1, sizeof(MappingType) * GetSize() - 1);
+  array[0].first = KeyType();
+  IncreaseSize(-1);
+  return res;
+}
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::PushLast(std::pair<KeyType, ValueType> value) {
+  array[GetSize()] = value;
+  IncreaseSize(1);
+}
 
 // valuetype for internalNode should be page id_t
 template class BPlusTreeInternalPage<GenericKey<4>, page_id_t, GenericComparator<4>>;

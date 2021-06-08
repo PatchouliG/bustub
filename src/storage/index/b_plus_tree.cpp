@@ -230,7 +230,7 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   //  delete
   leafPage->RemoveAndDeleteRecord(key, comparator_);
 
-  if (leafPage->GetSize() >= minSize(current_node)) {
+  if (sizeMoreThanMin(current_node)) {
     return;
   }
   //  handle root
@@ -307,11 +307,10 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
       //                       parent.toMutableInternalPage());
       auto parentKey = parentNode->KeyAt(position);
       parentNode->SetKeyAt(position, popRes.first);
-      current_node.toMutableInternalPage()->PushLast(popRes);
+      current_node.toMutableInternalPage()->PushLast(std::make_pair(parentKey, popRes.second));
       NodeWrapType child = NodeWrapType(popRes.second, buffer_pool_manager_);
       child.toMutableBPlusTreePage()->SetParentPageId(current_node.getPageId());
 //      todo here
-
       return;
     }
     if (hasLeftSibling(current_node, parent)) {
@@ -757,6 +756,7 @@ BPlusTree<KeyType, ValueType, KeyComparator>::findLeaf(const KeyType &key) {
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 int BPlusTree<KeyType, ValueType, KeyComparator>::minSize(const BPlusTree::NodeWrapType &node) {
+//  handle root
   if (node.getPageId() == root_page_id_) {
     return 0;
   }
