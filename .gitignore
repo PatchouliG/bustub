@@ -261,3 +261,4 @@ docs/dev
 # Vagrant
 .vagrant
 cmake-build-debug-remote/
+cmake-build*

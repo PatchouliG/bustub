@@ -230,12 +230,12 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   //  delete
   leafPage->RemoveAndDeleteRecord(key, comparator_);
 
-  if (sizeMoreThanMin(current_node)) {
+  if (leafPage->GetSize() >= minSize(current_node)) {
     return;
   }
   //  handle root
   if (leafPage->IsRootPage()) {
-    assert(leafPage->GetSize() == 0);
+    assert(leafPage->GetSize() == 1);
     root_page_id_ = INVALID_PAGE_ID;
     return;
   }
@@ -283,7 +283,7 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
 
   while (true) {
     current_node = stack.top();
-    if (sizeMoreThanMin(current_node)) {
+    if (current_node.toInternalPage()->GetSize() >= minSize(current_node)) {
       return;
     }
 
@@ -310,7 +310,7 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
       current_node.toMutableInternalPage()->PushLast(std::make_pair(parentKey, popRes.second));
       NodeWrapType child = NodeWrapType(popRes.second, buffer_pool_manager_);
       child.toMutableBPlusTreePage()->SetParentPageId(current_node.getPageId());
-//      todo here
+      //      todo here
       return;
     }
     if (hasLeftSibling(current_node, parent)) {
@@ -756,9 +756,9 @@ BPlusTree<KeyType, ValueType, KeyComparator>::findLeaf(const KeyType &key) {
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 int BPlusTree<KeyType, ValueType, KeyComparator>::minSize(const BPlusTree::NodeWrapType &node) {
-//  handle root
+  //  handle root
   if (node.getPageId() == root_page_id_) {
-    return 0;
+    return 2;
   }
   return node.toBPlusTreePage()->GetMinSize();
 }
@@ -772,7 +772,7 @@ BPlusTree<KeyType, ValueType, KeyComparator>::getRightSibling(const BPlusTree::N
     return NodeWrapType(pageId, buffer_pool_manager_);
   } else {
     const InternalPage *internalPage = parent.toInternalPage();
-    auto position = internalPage->ValueAt(node.getPageId());
+    auto position = internalPage->ValueIndex(node.getPageId());
     assert(position != internalPage->GetSize() - 1);
     return NodeWrapType(internalPage->ValueAt(position + 1), buffer_pool_manager_);
   }

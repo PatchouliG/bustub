@@ -220,7 +220,8 @@ TEST(BPlusTreeTests, DeleteTestNotFound) {
   index_key.SetFromInteger(2);
   tree.Remove(index_key, transaction);
 
-  tree.Print(bpm);
+  //  root page id is -1
+  //  tree.Print(bpm);
 
   delete disk_manager;
   delete key_schema;
@@ -255,7 +256,8 @@ TEST(BPlusTreeTests, DeleteTestRootIsLeaf) {
   index_key.SetFromInteger(1);
   tree.Remove(index_key, transaction);
 
-  tree.Print(bpm);
+  //  root page id is -1
+  //  tree.Print(bpm);
 
   delete disk_manager;
   delete key_schema;
@@ -264,10 +266,10 @@ TEST(BPlusTreeTests, DeleteTestRootIsLeaf) {
 }
 
 TEST(BPlusTreeTests, TestDeleteAll) {
-  std::stringstream buffer;
-  std::streambuf *oldCoutStreamBuf = std::cout.rdbuf();
+  //  std::stringstream buffer;
+  //  std::streambuf *oldCoutStreamBuf = std::cout.rdbuf();
 
-  std::cout.rdbuf(buffer.rdbuf());
+  //  std::cout.rdbuf(buffer.rdbuf());
 
   std::string createStmt = "a bigint";
   Schema *key_schema = ParseCreateStatement(createStmt);
@@ -296,13 +298,14 @@ TEST(BPlusTreeTests, TestDeleteAll) {
   index_key.SetFromInteger(1);
   tree.Remove(index_key, transaction);
 
-  tree.Print(bpm);
+  //  root page id is -1
+  //  tree.Print(bpm);
 
-  std::string text = buffer.str();  // text will now contain "Bla\n"
-  std::string s = "Leaf Page: 1 parent: -1 next: -1\n\n\n";
-  int checkRes = s.compare(text);
-  EXPECT_EQ(checkRes, 0);
-  std::cout.rdbuf(oldCoutStreamBuf);
+  //  std::string text = buffer.str();  // text will now contain "Bla\n"
+  //  std::string s = "Leaf Page: 1 parent: -1 next: -1\n\n\n";
+  //  int checkRes = s.compare(text);
+  //  EXPECT_EQ(checkRes, 0);
+  //  std::cout.rdbuf(oldCoutStreamBuf);
 
   delete disk_manager;
   delete key_schema;
@@ -448,7 +451,7 @@ TEST(BPlusTreeTests, TestLeafMergeRight) {
   tree.Remove(index_key);
 
   tree.Print(bpm);
-  tree.Draw(bpm,"pic");
+  tree.Draw(bpm, "pic");
   std::string text = buffer.str();  // text will now contain "Bla\n"
   std::string s = "Leaf Page: 1 parent: 3 next: -1\n0,1,3,\n\n";
   int checkRes = s.compare(text);
@@ -463,10 +466,10 @@ TEST(BPlusTreeTests, TestLeafMergeRight) {
 }
 
 TEST(BPlusTreeTests, TestInternalDistributeFromRight) {
-//  std::stringstream buffer;
-//  std::streambuf *oldCountStreamBuf = std::cout.rdbuf();
-//
-//  std::cout.rdbuf(buffer.rdbuf());
+  std::stringstream buffer;
+  std::streambuf *oldCountStreamBuf = std::cout.rdbuf();
+
+  std::cout.rdbuf(buffer.rdbuf());
 
   std::string createStmt = "a bigint";
   Schema *key_schema = ParseCreateStatement(createStmt);
@@ -497,20 +500,27 @@ TEST(BPlusTreeTests, TestInternalDistributeFromRight) {
   index_key.SetFromInteger(7);
   tree.Remove(index_key);
 
-  tree.Print(bpm);
-  tree.Draw(bpm,"pic");
-//  std::string text = buffer.str();  // text will now contain "Bla\n"
-//  std::string s = "Leaf Page: 1 parent: 3 next: 2\n0,1,\n\n";
-//  int checkRes = s.compare(text);
-//  EXPECT_EQ(checkRes, 0);
+  index_key.SetFromInteger(5);
+  tree.Remove(index_key);
 
-//  std::cout.rdbuf(oldCountStreamBuf);
+  tree.Print(bpm);
+//  tree.Draw(bpm, "pic");
+  std::string text = buffer.str();  // text will now contain "Bla\n"
+  std::string s =
+      "Internal Page: 8 parent: -1\n0: 3,4: 7,10: 11,\n\nInternal Page: 3 parent: 8\n0: 1,2: 2,\n\nLeaf Page: 1 "
+      "parent: 3 next: 2\n0,1,\n\nLeaf Page: 2 parent: 3 next: 4\n2,3,\n\nInternal Page: 7 parent: 8\n4: 4,8: "
+      "6,\n\nLeaf Page: 4 parent: 7 next: 6\n4,\n\nLeaf Page: 6 parent: 7 next: 9\n8,9,\n\nInternal Page: 11 parent: "
+      "8\n0: 9,12: 10,14: 12,\n\nLeaf Page: 9 parent: 11 next: 10\n10,11,\n\nLeaf Page: 10 parent: 11 next: "
+      "12\n12,13,\n\nLeaf Page: 12 parent: 11 next: -1\n14,15,\n\n";
+  int checkRes = s.compare(text);
+  EXPECT_EQ(checkRes, 0);
+
+  std::cout.rdbuf(oldCountStreamBuf);
 
   delete disk_manager;
   delete key_schema;
   delete bpm;
   delete transaction;
-
 }
 TEST(BPlusTreeTests, TestInternalDistributeLeft) {}
 
