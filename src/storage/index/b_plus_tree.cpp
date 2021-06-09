@@ -264,7 +264,8 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   //    merge
   page_id_t leftChildPageId;
   int position;
-  if (hasRightSibling(current_node, parent) && sizeMoreThanMin(getRightSibling(current_node, parent))) {
+  //  if (hasRightSibling(current_node, parent) && sizeMoreThanMin(getRightSibling(current_node, parent))) {
+  if (hasRightSibling(current_node, parent)) {
     NodeWrapType right = getRightSibling(current_node, parent);
     leftChildPageId = current_node.getPageId();
     position = parentPosition(parent.toInternalPage(), right.getPageId());
