@@ -335,6 +335,17 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
 
       rightNode->MoveAllTo(leftNode, parentKey, buffer_pool_manager_);
       parentNode->Remove(position);
+      //      must has left
+    } else {
+      NodeWrapType left = getLeftSibling(current_node, parent);
+      InternalPage *leftNode = left.toMutableInternalPage();
+      InternalPage *parentNode = parent.toMutableInternalPage();
+      InternalPage *rightNode = current_node.toMutableInternalPage();
+      position = parentPosition(parentNode, rightNode->GetPageId());
+      auto parentKey = parentNode->KeyAt(position);
+
+      rightNode->MoveAllTo(leftNode, parentKey, buffer_pool_manager_);
+      parentNode->Remove(position);
     }
     //        todo dev
     //    return;

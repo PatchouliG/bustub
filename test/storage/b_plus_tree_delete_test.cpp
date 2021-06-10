@@ -644,7 +644,7 @@ TEST(BPlusTreeTests, TestInternalDistributeLeft) {
   delete transaction;
 }
 
-TEST(BPlusTreeTests, TESTINTERNALMERGERIGHT) {
+TEST(BPlusTreeTests, testInternalMergeRight) {
   std::stringstream buffer;
   std::streambuf *oldCountStreamBuf = std::cout.rdbuf();
 
@@ -673,13 +673,19 @@ TEST(BPlusTreeTests, TESTINTERNALMERGERIGHT) {
     tree.Insert(index_key, rid, transaction);
   }
 
-//    index_key.SetFromInteger(3);
-//    tree.Remove(index_key);
+  index_key.SetFromInteger(3);
+  tree.Remove(index_key);
 
   tree.Print(bpm);
-  tree.Draw(bpm, "pic");
+  //  tree.Draw(bpm, "pic");
   std::string text = buffer.str();  // text will now contain "Bla\n"
-  std::string s = "todo";
+  std::string s =
+      "Internal Page: 8 parent: -1\n0: 3,2: 7,6: 14,\n\nInternal Page: 3 parent: 8\n0: 1,1: 2,\n\nLeaf Page: 1 parent: "
+      "3 next: 2\n0,\n\nLeaf Page: 2 parent: 3 next: 4\n1,\n\nInternal Page: 7 parent: 8\n2: 4,4: 6,5: 9,\n\nLeaf "
+      "Page: 4 parent: 7 next: 6\n2,\n\nLeaf Page: 6 parent: 7 next: 9\n4,\n\nLeaf Page: 9 parent: 7 next: "
+      "10\n5,\n\nInternal Page: 14 parent: 8\n6: 10,7: 12,8: 13,9: 15,\n\nLeaf Page: 10 parent: 14 next: "
+      "12\n6,\n\nLeaf Page: 12 parent: 14 next: 13\n7,\n\nLeaf Page: 13 parent: 14 next: 15\n8,\n\nLeaf Page: 15 "
+      "parent: 14 next: -1\n9,10,\n\n";
   int checkRes = s.compare(text);
   EXPECT_EQ(checkRes, 0);
 
@@ -690,19 +696,71 @@ TEST(BPlusTreeTests, TESTINTERNALMERGERIGHT) {
   delete bpm;
   delete transaction;
 }
-TEST(BPlusTreeTests, TestInternalMergeLeft) {}
+TEST(BPlusTreeTests, TestInternalMergeLeft) {
+  std::stringstream buffer;
+  std::streambuf *oldCountStreamBuf = std::cout.rdbuf();
+
+  std::cout.rdbuf(buffer.rdbuf());
+
+  std::string createStmt = "a bigint";
+  Schema *key_schema = ParseCreateStatement(createStmt);
+  GenericComparator<8> comparator(key_schema);
+
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 2, 3);
+  GenericKey<8> index_key;
+  // create transaction
+  Transaction *transaction = new Transaction(0);
+
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  RID rid;
+
+  for (int i = 0; i <= 10; ++i) {
+    index_key.SetFromInteger(i);
+    tree.Insert(index_key, rid, transaction);
+  }
+
+  for (int i = 7; i <= 10; ++i) {
+    index_key.SetFromInteger(i);
+    tree.Remove(index_key);
+  }
+
+  tree.Print(bpm);
+  tree.Draw(bpm, "pic");
+  std::string text = buffer.str();  // text will now contain "Bla\n"
+  std::string s =
+      "Internal Page: 8 parent: -1\n0: 3,2: 7,4: 11,\n\nInternal Page: 3 parent: 8\n0: 1,1: 2,\n\nLeaf Page: 1 parent: "
+      "3 next: 2\n0,\n\nLeaf Page: 2 parent: 3 next: 4\n1,\n\nInternal Page: 7 parent: 8\n2: 4,3: 5,\n\nLeaf Page: 4 "
+      "parent: 7 next: 5\n2,\n\nLeaf Page: 5 parent: 7 next: 6\n3,\n\nInternal Page: 11 parent: 8\n4: 6,5: 9,6: "
+      "10,\n\nLeaf Page: 6 parent: 11 next: 9\n4,\n\nLeaf Page: 9 parent: 11 next: 10\n5,\n\nLeaf Page: 10 parent: 11 "
+      "next: -1\n6,\n\n";
+  int checkRes = s.compare(text);
+  EXPECT_EQ(checkRes, 0);
+
+  std::cout.rdbuf(oldCountStreamBuf);
+
+  delete disk_manager;
+  delete key_schema;
+  delete bpm;
+  delete transaction;
+}
 TEST(BPlusTreeTests, TestDeleteMutipleTime) {}
 TEST(BPlusTreeTests, radome_test) {
-//  ##
-//  all level is sorted
-//  check child parent id
-//  check leaf next id
-//  chceck get after set/delete
-//      check scan
-//  check size(internal/leaf)
-//  left node key less , right node key is equal or big
+  //  ##
+  //  all level is sorted
+  //  check child parent id
+  //  check leaf next id
+  //  chceck get after set/delete
+  //      check scan
+  //  check size(internal/leaf)
+  //  left node key less , right node key is equal or big
 
-//  generate,delete ,check
+  //  generate,delete ,check
 }
 // namespace bustub
 }  // namespace bustub
