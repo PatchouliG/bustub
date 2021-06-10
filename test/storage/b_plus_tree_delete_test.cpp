@@ -693,6 +693,15 @@ TEST(BPlusTreeTests, TESTINTERNALMERGERIGHT) {
 TEST(BPlusTreeTests, TestInternalMergeLeft) {}
 TEST(BPlusTreeTests, TestDeleteMutipleTime) {}
 TEST(BPlusTreeTests, radome_test) {
+//  ##
+//  all level is sorted
+//  check child parent id
+//  check leaf next id
+//  chceck get after set/delete
+//      check scan
+//  check size(internal/leaf)
+//  left node key less , right node key is equal or big
+
 //  generate,delete ,check
 }
 // namespace bustub
