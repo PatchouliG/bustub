@@ -213,10 +213,12 @@ ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::RemoveAndReturnOnlyChild() { return IN
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveAllTo(BPlusTreeInternalPage *recipient, const KeyType &middle_key,
                                                BufferPoolManager *buffer_pool_manager) {
-  auto firstChild = array[0].second;
-  recipient->array[recipient->GetSize()] = std::make_pair(middle_key, firstChild);
-  recipient->IncreaseSize(1);
+//  auto firstChild = array[0].second;
+  //  recipient->array[recipient->GetSize()] = std::make_pair(middle_key, firstChild);
+  auto position = recipient->GetSize();
   std::memmove(&recipient->array[recipient->GetSize()], array, sizeof(MappingType) * GetSize());
+  recipient->array[position].first = middle_key;
+  recipient->IncreaseSize(GetSize());
   //  set parent to recipient
   for (auto i = 0; i < GetSize(); ++i) {
     auto childPageId = array[i].second;
@@ -304,7 +306,7 @@ void BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::PushLast(std::pai
 }
 template <typename KeyType, typename ValueType, typename KeyComparator>
 std::pair<KeyType, ValueType> BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::PopLast() {
-  auto res = array[GetSize()-1];
+  auto res = array[GetSize() - 1];
   IncreaseSize(-1);
   return res;
 }
@@ -314,6 +316,19 @@ void BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::PushFront(std::pa
   array[0] = value;
   IncreaseSize(1);
 }
+// template <typename KeyType, typename ValueType, typename KeyComparator>
+// void BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::merge(BPlusTreeInternalPage *right, KeyType keyType) {
+//  auto endPostion=GetSize();
+//  right.MoveAllTo(this,bustub::);
+//}
+// template <typename KeyType, typename ValueType, typename KeyComparator>
+// void BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>::merge(BPlusTreeInternalPage *right, KeyType parentKey,
+//                                                                     BufferPoolManager *bufferPoolManager) {
+//  auto endPosition = GetSize();
+//  right->MoveAllTo(this, bufferPoolManager);
+//  array[endPosition].first = parentKey;
+//}
+
 // valuetype for internalNode should be page id_t
 template class BPlusTreeInternalPage<GenericKey<4>, page_id_t, GenericComparator<4>>;
 template class BPlusTreeInternalPage<GenericKey<8>, page_id_t, GenericComparator<8>>;

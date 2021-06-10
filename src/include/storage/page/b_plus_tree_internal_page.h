@@ -69,6 +69,7 @@ class BPlusTreeInternalPage : public BPlusTreePage {
   void PushFront(MappingType value);
 
  private:
+//  void merge(BPlusTreeInternalPage *right, KeyType parentKey, BufferPoolManager *bufferPoolManager);
   void CopyNFrom(MappingType *items, int size, BufferPoolManager *buffer_pool_manager);
   void CopyLastFrom(const MappingType &pair, BufferPoolManager *buffer_pool_manager);
   void CopyFirstFrom(const MappingType &pair, BufferPoolManager *buffer_pool_manager);

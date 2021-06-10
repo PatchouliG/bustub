@@ -311,7 +311,7 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
       child.toMutableBPlusTreePage()->SetParentPageId(current_node.getPageId());
       return;
     }
-    if (hasLeftSibling(current_node, parent)) {
+    if (hasLeftSibling(current_node, parent) && sizeMoreThanMin(getLeftSibling(current_node, parent))) {
       auto left = getLeftSibling(current_node, parent);
       InternalPage *leftNode = left.toMutableInternalPage();
       InternalPage *parentNode = parent.toMutableInternalPage();
@@ -324,14 +324,21 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
       child.toMutableBPlusTreePage()->SetParentPageId(current_node.getPageId());
       return;
     }
+    // merge
+    if (hasRightSibling(current_node, parent)) {
+      NodeWrapType right = getRightSibling(current_node, parent);
+      InternalPage *rightNode = right.toMutableInternalPage();
+      InternalPage *parentNode = parent.toMutableInternalPage();
+      InternalPage *leftNode = current_node.toMutableInternalPage();
+      position = parentPosition(parentNode, rightNode->GetPageId());
+      auto parentKey = parentNode->KeyAt(position);
+
+      rightNode->MoveAllTo(leftNode, parentKey, buffer_pool_manager_);
+      parentNode->Remove(position);
+    }
     //        todo dev
-    return;
+    //    return;
 
-    //    redistribute
-
-    //    if is leaf
-    //    try redistribute from right
-    //    try redistribute from left
     //    merge right
     //    merge left
 
@@ -868,7 +875,7 @@ bool BPlusTree<KeyType, ValueType, KeyComparator>::sizeMoreThanMin(const BPlusTr
   if (node.getIndexPageType() == IndexPageType::LEAF_PAGE) {
     return node.toLeafPage()->GetSize() > minSize(node);
   } else {
-    return node.toInternalPage()->GetSize() > minSize(node);
+    return node.toInternalPage()->GetSize() - 1 > minSize(node);
   }
 }
 template <typename KeyType, typename ValueType, typename KeyComparator>
