@@ -304,20 +304,24 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
       InternalPage *parentNode = parent.toMutableInternalPage();
       auto popRes = rightNode->PopFirst();
       position = parentPosition(parentNode, rightNode->GetPageId());
-      //      MoveFirstToEndOf(current_node.toMutableInternalPage(), right.toMutableInternalPage(),
-      //                       parent.toMutableInternalPage());
       auto parentKey = parentNode->KeyAt(position);
       parentNode->SetKeyAt(position, popRes.first);
       current_node.toMutableInternalPage()->PushLast(std::make_pair(parentKey, popRes.second));
       NodeWrapType child = NodeWrapType(popRes.second, buffer_pool_manager_);
       child.toMutableBPlusTreePage()->SetParentPageId(current_node.getPageId());
-      //      todo here
       return;
     }
     if (hasLeftSibling(current_node, parent)) {
       auto left = getLeftSibling(current_node, parent);
-      MoveFirstToEndOf(left.toMutableInternalPage(), current_node.toMutableInternalPage(),
-                       parent.toMutableInternalPage());
+      InternalPage *leftNode = left.toMutableInternalPage();
+      InternalPage *parentNode = parent.toMutableInternalPage();
+      auto popRes = leftNode->PopLast();
+      position = parentPosition(parentNode, current_node.getPageId());
+      auto parentKey = parentNode->KeyAt(position);
+      parentNode->SetKeyAt(position, popRes.first);
+      current_node.toMutableInternalPage()->PushFront(std::make_pair(parentKey, popRes.second));
+      NodeWrapType child = NodeWrapType(popRes.second, buffer_pool_manager_);
+      child.toMutableBPlusTreePage()->SetParentPageId(current_node.getPageId());
       return;
     }
     //        todo dev

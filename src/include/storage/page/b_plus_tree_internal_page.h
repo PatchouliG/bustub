@@ -61,11 +61,12 @@ class BPlusTreeInternalPage : public BPlusTreePage {
   void MoveLastToFrontOf(BPlusTreeInternalPage *recipient);
   void MoveFirstToEndOf(BPlusTreeInternalPage *recipient);
 
-//  return key of array[1] and value of array[0]
+  //  return key of array[1] and value of array[0]
   MappingType PopFirst();
-//  KeyType PopLastKey();
+  //  return key,value of last of array
+  MappingType PopLast();
   void PushLast(MappingType value);
-//  void PushFront(MappingType value);
+  void PushFront(MappingType value);
 
  private:
   void CopyNFrom(MappingType *items, int size, BufferPoolManager *buffer_pool_manager);

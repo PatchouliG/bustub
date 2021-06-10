@@ -617,10 +617,22 @@ TEST(BPlusTreeTests, TestInternalDistributeLeft) {
   index_key.SetFromInteger(5);
   tree.Remove(index_key);
 
+  index_key.SetFromInteger(7);
+  tree.Remove(index_key);
+
+  index_key.SetFromInteger(9);
+  tree.Remove(index_key);
+
+  index_key.SetFromInteger(10);
+  tree.Remove(index_key);
+
   tree.Print(bpm);
   tree.Draw(bpm, "pic");
   std::string text = buffer.str();  // text will now contain "Bla\n"
-  std::string s = "todo";
+  std::string s =
+      "Internal Page: 8 parent: -1\n0: 3,2: 7,\n\nInternal Page: 3 parent: 8\n0: 1,0: 9,\n\nLeaf Page: 1 parent: 3 "
+      "next: 9\n-2,-1,\n\nLeaf Page: 9 parent: 3 next: -1\n0,1,\n\nInternal Page: 7 parent: 8\n4: 2,4: 4,\n\nLeaf "
+      "Page: 2 parent: 7 next: 4\n2,3,\n\nLeaf Page: 4 parent: 7 next: -1\n8,\n\n";
   int checkRes = s.compare(text);
   EXPECT_EQ(checkRes, 0);
 
