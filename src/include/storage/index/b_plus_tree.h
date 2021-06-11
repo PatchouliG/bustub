@@ -1,4 +1,3 @@
-//===----------------------------------------------------------------------===//
 //
 //                         CMU-DB Project (15-445/645)
 //                         ***DO NO SHARE PUBLICLY***
@@ -133,7 +132,6 @@ class BPlusTree {
   KeyType firstKey(const NodeWrapType &node);
 
   void MoveFirstToEndOf(LeafPage *left, LeafPage *right, InternalPage *parent);
-  void MoveFirstToEndOf(InternalPage *left, InternalPage *right, InternalPage *parent);
   void MoveLastToFrontOf(LeafPage *left, LeafPage *right, InternalPage *parent);
   void MoveLastToFrontOf(InternalPage *left, InternalPage *right, InternalPage *parent);
   //  return parent array postion to child

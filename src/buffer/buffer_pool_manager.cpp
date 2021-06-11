@@ -51,8 +51,8 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
   //        Note that pages are always found from the free list first.
   if (!free_list_.empty()) {
     auto frame_id_it = free_list_.begin();
-    free_list_.erase(frame_id_it);
     frame_id = *frame_id_it;
+    free_list_.erase(frame_id_it);
     //    return pages_ + *free_frame_id;
   } else {
     auto victim_res = replacer_->Victim(&frame_id);
