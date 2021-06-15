@@ -47,17 +47,23 @@ class BPlusTree {
   bool IsEmpty() const;
 
   // Insert a key-value pair into this B+ tree.
+  //  need thread safe
   bool Insert(const KeyType &key, const ValueType &value, Transaction *transaction = nullptr);
 
   // Remove a key and its value from this B+ tree.
+  //  need thread safe
   void Remove(const KeyType &key, Transaction *transaction = nullptr);
 
   // return the value associated with a given key
+  //  need thread safe
   bool GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction = nullptr);
 
   // index iterator
+  //  need thread safe
   INDEXITERATOR_TYPE begin();
+  //  need thread safe
   INDEXITERATOR_TYPE Begin(const KeyType &key);
+  //  need thread safe
   INDEXITERATOR_TYPE end();
 
   void Print(BufferPoolManager *bpm) {
@@ -126,8 +132,8 @@ class BPlusTree {
   NodeWrapType getLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
   bool hasLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
   bool hasRightSibling(const NodeWrapType &node, const NodeWrapType &parent);
-//  void MoveFirstToEndOf(NodeWrapType &left, NodeWrapType &right);
-//  void MoveLastToFrontOf(NodeWrapType &left, NodeWrapType &right);
+  //  void MoveFirstToEndOf(NodeWrapType &left, NodeWrapType &right);
+  //  void MoveLastToFrontOf(NodeWrapType &left, NodeWrapType &right);
   void MoveAllTo(NodeWrapType left, NodeWrapType &right);
   KeyType firstKey(const NodeWrapType &node);
 
