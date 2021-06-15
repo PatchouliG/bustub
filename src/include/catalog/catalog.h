@@ -107,16 +107,17 @@ class Catalog {
    * @param key_schema the schema of the key
    * @param key_attrs key attributes
    * @param keysize size of the key
-   * @return a pointer to the metadata of the new table
+   * @return a pointer to the metadata of the new tableIndex
    */
   template <class KeyType, class ValueType, class KeyComparator>
   IndexInfo *CreateIndex(Transaction *txn, const std::string &index_name, const std::string &table_name,
                          const Schema &schema, const Schema &key_schema, const std::vector<uint32_t> &key_attrs,
                          size_t keysize) {
-    auto indexMeta = IndexMetadata(index_name, table_name, &schema, key_attrs);
-    auto index = new BPlusTreeIndex<KeyType, ValueType, KeyComparator>(&indexMeta);
+    auto indexMeta = new IndexMetadata(index_name, table_name, &schema, key_attrs);
+    auto index = new BPlusTreeIndex<KeyType, ValueType, KeyComparator>(indexMeta, bpm_);
     auto id = next_index_oid_.fetch_add(1);
-    IndexInfo *indexInfo = new IndexInfo(key_schema, index_name, index, id, table_name, keysize);
+    IndexInfo *indexInfo =
+        new IndexInfo(key_schema, index_name, std::unique_ptr<Index>(index), id, table_name, keysize);
     indexes_.insert(std::make_pair(id, indexInfo));
     if (index_names_.find(table_name) == index_names_.end()) {
       index_names_.insert(std::make_pair(table_name, std::unordered_map<std::string, index_oid_t>()));
@@ -134,6 +135,9 @@ class Catalog {
 
   std::vector<IndexInfo *> GetTableIndexes(const std::string &table_name) {
     auto res = std::vector<IndexInfo *>();
+    if (index_names_.find(table_name) == index_names_.end()) {
+      return res;
+    }
     auto &set = index_names_.find(table_name)->second;
     for (auto it = set.begin(); it != set.end(); ++it) {
       auto id = it->second;

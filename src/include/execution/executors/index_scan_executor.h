@@ -40,9 +40,13 @@ class IndexScanExecutor : public AbstractExecutor {
   void Init() override;
 
   bool Next(Tuple *tuple, RID *rid) override;
+  virtual ~IndexScanExecutor();
 
  private:
   /** The index scan plan node to be executed. */
   const IndexScanPlanNode *plan_;
+  BPlusTreeIndex<GenericKey<8>, RID, GenericComparator<8>> *index;
+  IndexIterator<GenericKey<8>, RID, GenericComparator<8>> *it;
+
 };
 }  // namespace bustub
