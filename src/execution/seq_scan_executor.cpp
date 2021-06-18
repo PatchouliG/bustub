@@ -29,9 +29,14 @@ bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
     if (iterator == tableHeap->End()) {
       return false;
     }
+    auto orign_schema = exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->schema_;
     *tuple = *iterator;
+    auto scheme = plan_->OutputSchema();
+
+    *rid = tuple->GetRid();
     if (plan_->GetPredicate() == nullptr ||
         plan_->GetPredicate()->Evaluate(tuple, plan_->OutputSchema()).GetAs<bool>()) {
+      *tuple = ProjectTuple(*tuple, orign_schema, *scheme);
       break;
     } else {
       iterator++;

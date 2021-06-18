@@ -44,6 +44,9 @@ bool BPLUSTREE_TYPE::IsEmpty() const { return root_page_id_ == INVALID_PAGE_ID; 
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction) {
+  if (root_page_id_ == INVALID_PAGE_ID) {
+    return false;
+  }
   NodeWrapType current_node = NodeWrapType(root_page_id_, LatchStatus::readL, buffer_pool_manager_);
   while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
     const InternalPage *internalPage = current_node.toInternalPage();

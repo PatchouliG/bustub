@@ -22,6 +22,7 @@
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/expressions/abstract_expression.h"
+#include "execution/expressions/aggregate_value_expression.h"
 #include "execution/plans/aggregation_plan.h"
 #include "storage/table/tuple.h"
 #include "type/value_factory.h"
@@ -190,14 +191,16 @@ class AggregationExecutor : public AbstractExecutor {
     return {vals};
   }
 
+  virtual ~AggregationExecutor();
+
  private:
   /** The aggregation plan node. */
   const AggregationPlanNode *plan_;
   /** The child executor whose tuples we are aggregating. */
   std::unique_ptr<AbstractExecutor> child_;
   /** Simple aggregation hash table. */
-  // Uncomment me! SimpleAggregationHashTable aht_;
+  SimpleAggregationHashTable *aht_;
   /** Simple aggregation hash table iterator. */
-  // Uncomment me! SimpleAggregationHashTable::Iterator aht_iterator_;
+  SimpleAggregationHashTable::Iterator *aht_iterator_;
 };
 }  // namespace bustub

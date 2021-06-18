@@ -50,6 +50,19 @@ class AbstractExecutor {
   /** @return the executor context in which this executor runs */
   ExecutorContext *GetExecutorContext() { return exec_ctx_; }
 
+  Tuple ProjectTuple(const Tuple &tuple, const Schema &origin, const Schema &output) {
+    auto count = output.GetColumnCount();
+    std::vector<Value> values;
+    for (uint32_t i = 0; i < count; ++i) {
+      Column col = output.GetColumn(i);
+      std::string col_name = col.GetName();
+      auto idx = origin.GetColIdx(col_name);
+      values.push_back(tuple.GetValue(&origin, idx));
+    }
+    Tuple res = Tuple(values, &output);
+    return res;
+  }
+
  protected:
   ExecutorContext *exec_ctx_;
 };

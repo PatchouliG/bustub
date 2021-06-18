@@ -59,13 +59,14 @@ class Schema {
    * @param col_name name of column to look for
    * @return the index of a column with the given name, throws an exception if it does not exist
    */
-  uint32_t GetColIdx(const std::string &col_name) const {
+  int32_t GetColIdx(const std::string &col_name) const {
     for (uint32_t i = 0; i < columns_.size(); ++i) {
       if (columns_[i].GetName() == col_name) {
         return i;
       }
     }
-    UNREACHABLE("Column does not exist");
+    return -1;
+//    UNREACHABLE("Column does not exist");
   }
 
   /** @return the indices of non-inlined columns */
