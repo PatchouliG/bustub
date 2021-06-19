@@ -19,16 +19,18 @@ namespace bustub {
 AggregationExecutor::AggregationExecutor(ExecutorContext *exec_ctx, const AggregationPlanNode *plan,
                                          std::unique_ptr<AbstractExecutor> &&child)
     : AbstractExecutor(exec_ctx), plan_(plan), child_(std::move(child)) {
-  const Schema *schema = plan_->OutputSchema();
-  std::vector<const AbstractExpression *> aggExp;
-  for (auto it = schema->GetColumns().begin(); it != schema->GetColumns().end(); ++it) {
-    const Column &column = *it;
-    const AggregateValueExpression *exp = (const AggregateValueExpression *)(column.GetExpr());
-    if (!exp->isGroupByTerm()) {
-      aggExp.push_back(exp);
-    }
-  }
-  aht_ = new SimpleAggregationHashTable(aggExp, plan->GetAggregateTypes());
+  //  const Schema *schema = plan_->OutputSchema();
+  //  plan->GetAggregates()
+
+  //  std::vector<const AbstractExpression *> aggExp;
+  //  for (auto it = schema->GetColumns().begin(); it != schema->GetColumns().end(); ++it) {
+  //    const Column &column = *it;
+  //    const AggregateValueExpression *exp = (const AggregateValueExpression *)(column.GetExpr());
+  //    if (!exp->isGroupByTerm()) {
+  //      aggExp.push_back(exp);
+  //    }
+  //  }
+  aht_ = new SimpleAggregationHashTable(plan->GetAggregates(), plan->GetAggregateTypes());
 }
 
 const AbstractExecutor *AggregationExecutor::GetChildExecutor() const { return child_.get(); }
@@ -59,11 +61,26 @@ void AggregationExecutor::Init() {
 }
 
 bool AggregationExecutor::Next(Tuple *tuple, RID *rid) {
+  bool res = false;
   while (*aht_iterator_ != aht_->End()) {
-    tuple
-
+    auto &key = aht_iterator_->Key().group_bys_;
+    auto &value = aht_iterator_->Val().aggregates_;
+    //    Tuple valueTuple(value, child_->GetOutputSchema());
+    if (plan_->GetHaving() != nullptr && plan_->GetHaving()->EvaluateAggregate(key, value).GetAs<bool>()) {
+      //            const Schema *outputSchema = plan_->OutputSchema();
+      std::vector<Value> values;
+      for (auto it = plan_->OutputSchema()->GetColumns().begin(); it != plan_->OutputSchema()->GetColumns().end();
+           ++it) {
+        values.push_back(it->GetExpr()->EvaluateAggregate(key, value));
+      }
+      *tuple = Tuple(values, plan_->OutputSchema());
+      res = true;
+      aht_iterator_->operator++();
+      break;
+    }
+    aht_iterator_->operator++();
   }
-  return true;
+  return res;
 }
 AggregationExecutor::~AggregationExecutor() {
   delete aht_;
