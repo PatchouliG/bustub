@@ -66,7 +66,7 @@ bool AggregationExecutor::Next(Tuple *tuple, RID *rid) {
     auto &key = aht_iterator_->Key().group_bys_;
     auto &value = aht_iterator_->Val().aggregates_;
     //    Tuple valueTuple(value, child_->GetOutputSchema());
-    if (plan_->GetHaving() != nullptr && plan_->GetHaving()->EvaluateAggregate(key, value).GetAs<bool>()) {
+    if (plan_->GetHaving() == nullptr || plan_->GetHaving()->EvaluateAggregate(key, value).GetAs<bool>()) {
       //            const Schema *outputSchema = plan_->OutputSchema();
       std::vector<Value> values;
       for (auto it = plan_->OutputSchema()->GetColumns().begin(); it != plan_->OutputSchema()->GetColumns().end();
