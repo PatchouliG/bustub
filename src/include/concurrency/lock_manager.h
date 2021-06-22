@@ -36,18 +36,41 @@ class LockManager {
 
   class LockRequest {
    public:
-    LockRequest(txn_id_t txn_id, LockMode lock_mode) : txn_id_(txn_id), lock_mode_(lock_mode), granted_(false) {}
+    LockRequest(txn_id_t txn_id, LockMode lock_mode)
+        : txn_id_(txn_id), lock_mode_(lock_mode), granted_(false), abort(false) {}
 
+   private:
     txn_id_t txn_id_;
     LockMode lock_mode_;
+    bool stateChange;
     bool granted_;
+    bool abort;
+
+   public:
+    bool isStateChange() const { return stateChange; }
+    LockMode getLockMode() const { return lock_mode_; }
+    bool isGranted() const { return granted_ && !abort; }
+    void setGranted(bool granted) { granted_ = granted; }
+    void setLockMode(LockMode lockMode) { lock_mode_ = lockMode; }
+    txn_id_t getTxnId() const { return txn_id_; }
   };
 
   class LockRequestQueue {
    public:
     std::list<LockRequest> request_queue_;
     std::condition_variable cv_;  // for notifying blocked transactions on this rid
+                                  //    todo ?
+                                  //    for cv lock
+    std::mutex mutex;
     bool upgrading_ = false;
+
+    //    todo assert rid exits, null if is not locked
+    std::optional<LockMode> currentLockMode()const;
+    //    todo
+    LockRequest popByTxnId(txn_id_t id);
+    LockRequest getByTxnId(txn_id_t id) const;
+    void addRequest(LockRequest lockRequest);
+    void grantLock();
   };
 
  public:
@@ -105,6 +128,7 @@ class LockManager {
    * @param rid the RID that is locked by the transaction
    * @return true if the unlock is successful, false otherwise
    */
+  //   ? when false
   bool Unlock(Transaction *txn, const RID &rid);
 
   /*** Graph API ***/
@@ -137,7 +161,8 @@ class LockManager {
   std::thread *cycle_detection_thread_;
 
   /** Lock table for lock requests. */
-  std::unordered_map<RID, LockRequestQueue> lock_table_;
+  //  todo need implement
+  std::unordered_map<RID, std::unique_ptr<LockRequestQueue>> lock_table_;
   /** Waits-for graph representation. */
   std::unordered_map<txn_id_t, std::vector<txn_id_t>> waits_for_;
 };
