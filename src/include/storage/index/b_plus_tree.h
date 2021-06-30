@@ -18,6 +18,7 @@
 #include "storage/index/index_iterator.h"
 #include "storage/page/b_plus_tree_internal_page.h"
 #include "storage/page/b_plus_tree_leaf_page.h"
+#include <stack>
 
 namespace bustub {
 
@@ -40,6 +41,22 @@ class BPlusTree {
   using NodeWrapType = NodePageWrap<KeyType, ValueType, KeyComparator>;
 
  public:
+  enum class Mode { read, insert, remove };
+
+  class BTreeLockManager {
+   public:
+    BTreeLockManager(BPlusTree *bPlusTree, Mode mode);
+    void addChild(NodeWrapType nodeWrapType);
+    NodeWrapType popChild();
+    virtual ~BTreeLockManager();
+
+   private:
+    BPlusTree *bPlusTree;
+    std::stack<NodeWrapType> stack;
+    Mode mode;
+  };
+
+ public:
   explicit BPlusTree(std::string name, BufferPoolManager *buffer_pool_manager, const KeyComparator &comparator,
                      int leaf_max_size = LEAF_PAGE_SIZE, int internal_max_size = INTERNAL_PAGE_SIZE);
 
@@ -60,6 +77,7 @@ class BPlusTree {
   INDEXITERATOR_TYPE Begin(const KeyType &key);
   INDEXITERATOR_TYPE end();
 
+  bool sizeMoreThanMin(const NodeWrapType &node);
   void Print(BufferPoolManager *bpm) {
     ToString(reinterpret_cast<BPlusTreePage *>(bpm->FetchPage(root_page_id_)->GetData()), bpm);
   }
@@ -121,13 +139,12 @@ class BPlusTree {
   NodeWrapType findLeaf(const KeyType &key);
 
   int minSize(const NodeWrapType &node);
-  bool sizeMoreThanMin(const NodeWrapType &node);
   NodeWrapType getRightSibling(const NodeWrapType &node, const NodeWrapType &parent);
   NodeWrapType getLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
   bool hasLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
   bool hasRightSibling(const NodeWrapType &node, const NodeWrapType &parent);
-//  void MoveFirstToEndOf(NodeWrapType &left, NodeWrapType &right);
-//  void MoveLastToFrontOf(NodeWrapType &left, NodeWrapType &right);
+  //  void MoveFirstToEndOf(NodeWrapType &left, NodeWrapType &right);
+  //  void MoveLastToFrontOf(NodeWrapType &left, NodeWrapType &right);
   void MoveAllTo(NodeWrapType left, NodeWrapType &right);
   KeyType firstKey(const NodeWrapType &node);
 

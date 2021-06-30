@@ -44,14 +44,10 @@ bool BPLUSTREE_TYPE::IsEmpty() const { return root_page_id_ == INVALID_PAGE_ID; 
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction) {
-//<<<<<<< HEAD
   if (root_page_id_ == INVALID_PAGE_ID) {
     return false;
   }
-//  NodeWrapType current_node = NodeWrapType(root_page_id_, LatchStatus::readL, buffer_pool_manager_);
-//=======
   NodeWrapType current_node = NodeWrapType(root_page_id_, buffer_pool_manager_);
-//>>>>>>> parent of 7f6a3b7... not ok
   while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
     const InternalPage *internalPage = current_node.toInternalPage();
     auto page_id = internalPage->Lookup(key, comparator_);
@@ -842,6 +838,69 @@ void BPlusTree<KeyType, ValueType, KeyComparator>::mergeInternal(BPlusTree::Inte
   parent->Remove(position);
   right->MoveAllTo(left, midKey, buffer_pool_manager_);
   buffer_pool_manager_->DeletePage(right->GetPageId());
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::addChild(BPlusTree::NodeWrapType nodeWrapType) {
+  if (stack.size() > 0) {
+    const NodeWrapType &parent = stack.top();
+    int size = bPlusTree->getSize(parent.toBPlusTreePage());
+    switch (mode) {
+      case Mode::read:
+        parent.getPage()->RUnlatch();
+        stack.pop();
+        break;
+      case Mode::remove:
+        if (size > bPlusTree->minSize(parent)) {
+          parent.getPage()->WUnlatch();
+          stack.pop();
+        }
+        break;
+      case Mode::insert:
+        if (size < bPlusTree->getMaxSizeByType(parent.toBPlusTreePage())) {
+          parent.getPage()->WUnlatch();
+          stack.pop();
+        }
+        break;
+    }
+  }
+  if (mode == Mode::read) {
+    nodeWrapType.getPage()->RLatch();
+  } else {
+    nodeWrapType.getPage()->WLatch();
+  }
+  stack.push(nodeWrapType);
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::BTreeLockManager(BPlusTree *bPlusTree,
+                                                                                 BPlusTree::Mode mode)
+    : bPlusTree(bPlusTree), mode(mode) {}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+typename BPlusTree<KeyType, ValueType, KeyComparator>::NodeWrapType
+BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::popChild() {
+  NodePageWrap res = stack.top();
+  stack.pop();
+  if (mode == Mode::read) {
+    res.getPage()->RUnlatch();
+  } else {
+    res.getPage()->WUnlatch();
+  }
+  return res;
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::~BTreeLockManager() {
+  while (stack.size() > 0) {
+    const NodeWrapType &node = stack.top();
+    if (mode == Mode::read) {
+      node.getPage()->RUnlatch();
+    } else {
+      node.getPage()->WUnlatch();
+    }
+    stack.pop();
+  }
 }
 
 }  // namespace bustub
