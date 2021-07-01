@@ -47,7 +47,8 @@ class BPlusTree {
    public:
     BTreeLockManager(BPlusTree *bPlusTree, Mode mode);
     void addChild(NodeWrapType nodeWrapType);
-    NodeWrapType popChild();
+    void pop();
+    NodeWrapType top();
     virtual ~BTreeLockManager();
 
    private:
@@ -62,6 +63,9 @@ class BPlusTree {
 
   // Returns true if this B+ tree has no keys and values.
   bool IsEmpty() const;
+
+  void lockRoot();
+  void unlockRoot();
 
   // Insert a key-value pair into this B+ tree.
   bool Insert(const KeyType &key, const ValueType &value, Transaction *transaction = nullptr);
@@ -167,6 +171,7 @@ class BPlusTree {
   KeyComparator comparator_;
   int leaf_max_size_;
   int internal_max_size_;
+  std::mutex root_page_lock;
 };
 
 }  // namespace bustub

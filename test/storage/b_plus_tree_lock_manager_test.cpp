@@ -13,6 +13,34 @@ namespace bustub {
 
 #define PageType NodePageWrap<GenericKey<8>, RID, GenericComparator<8>>
 
+TEST(BPlusTreeTests, lockManager_test_push_pop) {
+  Schema *key_schema = ParseCreateStatement("a bigint");
+
+  GenericComparator<8> comparator(key_schema);
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  typedef BPlusTree<GenericKey<8>, RID, GenericComparator<8>> BTree;
+  BTree tree("foo_pk", bpm, comparator, 3, 2);
+
+  {
+    auto rootNode = PageType(bpm, IndexPageType::INTERNAL_PAGE, 3);
+    auto node2 = PageType(bpm, IndexPageType::INTERNAL_PAGE, 3);
+    {
+      BTree::BTreeLockManager bTreeLockManager(&tree, BTree::Mode::read);
+
+      bTreeLockManager.addChild(rootNode);
+      EXPECT_EQ(bTreeLockManager.top().getPage(), rootNode.getPage());
+      bTreeLockManager.addChild(node2);
+      EXPECT_EQ(bTreeLockManager.top().getPage(), node2.getPage());
+      bTreeLockManager.pop();
+      EXPECT_EQ(bTreeLockManager.top().getPage(), rootNode.getPage());
+    }
+  }
+  delete key_schema;
+  delete disk_manager;
+  delete bpm;
+}
 TEST(BPlusTreeTests, lockManager_test_read_mod) {
   Schema *key_schema = ParseCreateStatement("a bigint");
 
@@ -41,7 +69,7 @@ TEST(BPlusTreeTests, lockManager_test_read_mod) {
       bTreeLockManager.addChild(node3);
       EXPECT_EQ(node3.getPage()->getLockStatus(), Page::LockStatus::rlock);
       EXPECT_EQ(node2.getPage()->getLockStatus(), Page::LockStatus::unlock);
-      bTreeLockManager.popChild();
+      bTreeLockManager.pop();
       EXPECT_EQ(node3.getPage()->getLockStatus(), Page::LockStatus::unlock);
     }
     EXPECT_EQ(rootNode.getPage()->getLockStatus(), Page::LockStatus::unlock);
@@ -84,7 +112,7 @@ TEST(BPlusTreeTests, lockManager_test_insert_mod_with_full_node) {
       EXPECT_EQ(node2.getPage()->getLockStatus(), Page::LockStatus::wlock);
       EXPECT_EQ(node3.getPage()->getLockStatus(), Page::LockStatus::wlock);
 
-      bTreeLockManager.popChild();
+      bTreeLockManager.pop();
       EXPECT_EQ(node3.getPage()->getLockStatus(), Page::LockStatus::unlock);
     }
     EXPECT_EQ(rootNode.getPage()->getLockStatus(), Page::LockStatus::unlock);
@@ -132,7 +160,7 @@ TEST(BPlusTreeTests, lockManager_test_insert_mod_with_un_full_node) {
       EXPECT_EQ(node2.getPage()->getLockStatus(), Page::LockStatus::unlock);
       EXPECT_EQ(node3.getPage()->getLockStatus(), Page::LockStatus::wlock);
 
-      bTreeLockManager.popChild();
+      bTreeLockManager.pop();
       EXPECT_EQ(node3.getPage()->getLockStatus(), Page::LockStatus::unlock);
     }
     EXPECT_EQ(rootNode.getPage()->getLockStatus(), Page::LockStatus::unlock);
@@ -180,7 +208,7 @@ TEST(BPlusTreeTests, lockManager_test_remove_mode_with_full_node) {
       EXPECT_EQ(node2.getPage()->getLockStatus(), Page::LockStatus::unlock);
       EXPECT_EQ(node3.getPage()->getLockStatus(), Page::LockStatus::wlock);
 
-      bTreeLockManager.popChild();
+      bTreeLockManager.pop();
       EXPECT_EQ(node3.getPage()->getLockStatus(), Page::LockStatus::unlock);
     }
     EXPECT_EQ(rootNode.getPage()->getLockStatus(), Page::LockStatus::unlock);
@@ -228,7 +256,7 @@ TEST(BPlusTreeTests, lockManager_test_remove_mode_with_half_full_node) {
       EXPECT_EQ(rootNode.getPage()->getLockStatus(), Page::LockStatus::wlock);
       EXPECT_EQ(node3.getPage()->getLockStatus(), Page::LockStatus::wlock);
 
-      bTreeLockManager.popChild();
+      bTreeLockManager.pop();
       EXPECT_EQ(node3.getPage()->getLockStatus(), Page::LockStatus::unlock);
     }
     EXPECT_EQ(rootNode.getPage()->getLockStatus(), Page::LockStatus::unlock);

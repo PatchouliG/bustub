@@ -81,7 +81,8 @@ bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   }
 
   //  find leaf to insert, store parent on path
-  std::stack<NodeWrapType> stack;
+  //  std::stack<NodeWrapType> stack;
+  BTreeLockManager bTreeLockManager(this, Mode::insert);
   NodeWrapType current_node = NodeWrapType(root_page_id_, buffer_pool_manager_);
   while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
     const InternalPage *internalPage = current_node.toInternalPage();
@@ -89,7 +90,8 @@ bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
 
     //    todo
     //    if (internalPage->GetSize() == internal_max_size_) {
-    stack.push(current_node);
+    //    stack.push(current_node);
+    bTreeLockManager.addChild(current_node);
     //    }
     current_node = NodeWrapType(page_id, buffer_pool_manager_);
   }
@@ -125,8 +127,10 @@ bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
       //      assert(stack.empty());
       return true;
     } else {
-      NodeWrapType parentNodeWrap = stack.top();
-      stack.pop();
+      //      NodeWrapType parentNodeWrap = stack.top();
+      //      stack.pop();
+      NodeWrapType parentNodeWrap = bTreeLockManager.top();
+      bTreeLockManager.pop();
       assert(parentNodeWrap.getPageId() == current_node.toBPlusTreePage()->GetParentPageId());
       InternalPage *parentNode = parentNodeWrap.toMutableInternalPage();
       parentNode->InsertNodeAfter(current_node.getPageId(), min_key, right_node.getPageId());
@@ -848,18 +852,18 @@ void BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::addChild(BP
     switch (mode) {
       case Mode::read:
         parent.getPage()->RUnlatch();
-        stack.pop();
+        //        stack.pop();
         break;
       case Mode::remove:
         if (size > bPlusTree->minSize(parent)) {
           parent.getPage()->WUnlatch();
-          stack.pop();
+          //          stack.pop();
         }
         break;
       case Mode::insert:
         if (size < bPlusTree->getMaxSizeByType(parent.toBPlusTreePage())) {
           parent.getPage()->WUnlatch();
-          stack.pop();
+          //          stack.pop();
         }
         break;
     }
@@ -878,29 +882,47 @@ BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::BTreeLockManager
     : bPlusTree(bPlusTree), mode(mode) {}
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
-typename BPlusTree<KeyType, ValueType, KeyComparator>::NodeWrapType
-BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::popChild() {
+void BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::pop() {
   NodePageWrap res = stack.top();
   stack.pop();
-  if (mode == Mode::read) {
-    res.getPage()->RUnlatch();
-  } else {
-    res.getPage()->WUnlatch();
+
+  if (res.getPage()->getLockStatus() != Page::LockStatus::unlock) {
+    if (mode == Mode::read) {
+      res.getPage()->RUnlatch();
+    } else {
+      res.getPage()->WUnlatch();
+    }
   }
-  return res;
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+typename BPlusTree<KeyType, ValueType, KeyComparator>::NodeWrapType
+BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::top() {
+  return stack.top();
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::~BTreeLockManager() {
   while (stack.size() > 0) {
     const NodeWrapType &node = stack.top();
-    if (mode == Mode::read) {
-      node.getPage()->RUnlatch();
-    } else {
-      node.getPage()->WUnlatch();
+    if (node.getPage()->getLockStatus() != Page::LockStatus::unlock) {
+      if (mode == Mode::read) {
+        node.getPage()->RUnlatch();
+      } else {
+        node.getPage()->WUnlatch();
+      }
     }
     stack.pop();
   }
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::lockRoot() {
+  root_page_lock.lock();
+}
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::unlockRoot() {
+  root_page_lock.unlock();
 }
 
 }  // namespace bustub
