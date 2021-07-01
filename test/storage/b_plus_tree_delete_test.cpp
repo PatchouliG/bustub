@@ -11,7 +11,10 @@
 #include "storage/index/b_plus_tree.h"
 
 namespace bustub {
-
+TEST(BPlusTreeTests, debug) { std::atomic<int> a = 0;
+  a.fetch_add(1);
+  std::cout<<a.load()<<std::endl;
+}
 TEST(BPlusTreeTests, DeleteTest1) {
   // create KeyComparator and index schema
   std::string createStmt = "a bigint";
