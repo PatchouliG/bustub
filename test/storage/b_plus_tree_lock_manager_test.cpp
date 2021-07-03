@@ -13,7 +13,7 @@ namespace bustub {
 
 #define PageType NodePageWrap<GenericKey<8>, RID, GenericComparator<8>>
 
-TEST(BPlusTreeTests, lockManager_test_push_pop) {
+TEST(BPlusTreeTests, DISABLED_lockManager_test_push_pop) {
   Schema *key_schema = ParseCreateStatement("a bigint");
 
   GenericComparator<8> comparator(key_schema);
@@ -41,7 +41,7 @@ TEST(BPlusTreeTests, lockManager_test_push_pop) {
   delete disk_manager;
   delete bpm;
 }
-TEST(BPlusTreeTests, lockManager_test_read_mod) {
+TEST(BPlusTreeTests, DISABLED_lockManager_test_read_mod) {
   Schema *key_schema = ParseCreateStatement("a bigint");
 
   GenericComparator<8> comparator(key_schema);
@@ -81,7 +81,7 @@ TEST(BPlusTreeTests, lockManager_test_read_mod) {
   delete disk_manager;
   delete bpm;
 }
-TEST(BPlusTreeTests, lockManager_test_insert_mod_with_full_node) {
+TEST(BPlusTreeTests, DISABLED_lockManager_test_insert_mod_with_full_node) {
   Schema *key_schema = ParseCreateStatement("a bigint");
 
   GenericComparator<8> comparator(key_schema);
@@ -126,7 +126,7 @@ TEST(BPlusTreeTests, lockManager_test_insert_mod_with_full_node) {
   delete disk_manager;
   delete bpm;
 }
-TEST(BPlusTreeTests, lockManager_test_insert_mod_with_un_full_node) {
+TEST(BPlusTreeTests, DISABLED_lockManager_test_insert_mod_with_un_full_node) {
   Schema *key_schema = ParseCreateStatement("a bigint");
 
   GenericComparator<8> comparator(key_schema);
@@ -174,7 +174,7 @@ TEST(BPlusTreeTests, lockManager_test_insert_mod_with_un_full_node) {
   delete disk_manager;
   delete bpm;
 }
-TEST(BPlusTreeTests, lockManager_test_remove_mode_with_full_node) {
+TEST(BPlusTreeTests, DISABLED_lockManager_test_remove_mode_with_full_node) {
   Schema *key_schema = ParseCreateStatement("a bigint");
 
   GenericComparator<8> comparator(key_schema);
@@ -222,7 +222,7 @@ TEST(BPlusTreeTests, lockManager_test_remove_mode_with_full_node) {
   delete disk_manager;
   delete bpm;
 }
-TEST(BPlusTreeTests, lockManager_test_remove_mode_with_half_full_node) {
+TEST(BPlusTreeTests, DISABLED_lockManager_test_remove_mode_with_half_full_node) {
   Schema *key_schema = ParseCreateStatement("a bigint");
 
   GenericComparator<8> comparator(key_schema);

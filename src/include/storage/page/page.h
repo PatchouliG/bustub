@@ -15,6 +15,8 @@
 #include <cstring>
 #include <iostream>
 
+#include <optional>
+#include <thread>
 #include "common/config.h"
 #include "common/rwlatch.h"
 
@@ -54,10 +56,28 @@ class Page {
   /** Acquire the page write latch. */
   inline void WLatch() {
     rwlatch_.WLock();
+//    for debug
+    {
+      assert(!tid.has_value());
+      assert(lockStatus == unlock);
+      tid = std::this_thread::get_id();
+    }
     lockStatus = wlock;
   }
 
   /** Release the page write latch. */ inline void WUnlatch() {
+//    for debug
+    {
+      assert(tid.has_value());
+      //    if (tid.value() != std::this_thread::get_id()) {
+      //      return;
+      //    }
+
+      assert(tid.value() == std::this_thread::get_id());
+      assert(lockStatus == wlock);
+      assert(lockStatus == wlock && lockStatus);
+      tid.reset();
+    }
     rwlatch_.WUnlock();
     lockStatus = unlock;
   }
@@ -107,6 +127,8 @@ class Page {
   ReaderWriterLatch rwlatch_;
   //  for test
   LockStatus lockStatus;
+//  for debug
+  std::optional<std::thread::id> tid;
 };
 
 }  // namespace bustub

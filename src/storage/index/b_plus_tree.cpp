@@ -76,27 +76,24 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transaction *transaction) {
   //  create root if is invalid
+  BTreeLockManager bTreeLockManager(this, Mode::insert);
   if (root_page_id_ == INVALID_PAGE_ID) {
     createRoot(true);
   }
 
   //  find leaf to insert, store parent on path
-  //  std::stack<NodeWrapType> stack;
-  BTreeLockManager bTreeLockManager(this, Mode::insert);
   NodeWrapType current_node = NodeWrapType(root_page_id_, buffer_pool_manager_);
+  bTreeLockManager.addChild(current_node);
   while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
     const InternalPage *internalPage = current_node.toInternalPage();
     auto page_id = internalPage->Lookup(key, comparator_);
 
-    //    todo
-    //    if (internalPage->GetSize() == internal_max_size_) {
-    //    stack.push(current_node);
-    bTreeLockManager.addChild(current_node);
-    //    }
     current_node = NodeWrapType(page_id, buffer_pool_manager_);
+    bTreeLockManager.addChild(current_node);
   }
   //  insert
   assert(current_node.getIndexPageType() == IndexPageType::LEAF_PAGE);
+  assert(current_node.getPage()->getLockStatus() == Page::LockStatus::wlock);
   LeafPage *leafPage = current_node.toMutableLeafPage();
   //  check if exits
   auto res = leafPage->KeyIndex(key, comparator_);
@@ -108,6 +105,7 @@ bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   //  check leaf if need to split
 
   while (true) {
+    assert(current_node.getPage()->getLockStatus() == Page::LockStatus::wlock);
     auto max_size = getMaxSizeByType(current_node.toBPlusTreePage());
     if (getSize(current_node.toBPlusTreePage()) <= max_size) {
       return true;
@@ -123,23 +121,19 @@ bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
       NodeWrapType root = createRoot(false);
       root.toMutableInternalPage()->PopulateNewRoot(current_node.getPageId(), min_key, right_node.getPageId());
       updateParentNode(root, current_node, right_node);
-      //      todo
-      //      assert(stack.empty());
       return true;
     } else {
-      //      NodeWrapType parentNodeWrap = stack.top();
-      //      stack.pop();
-      NodeWrapType parentNodeWrap = bTreeLockManager.top();
       bTreeLockManager.pop();
+      NodeWrapType parentNodeWrap = bTreeLockManager.top();
       assert(parentNodeWrap.getPageId() == current_node.toBPlusTreePage()->GetParentPageId());
       InternalPage *parentNode = parentNodeWrap.toMutableInternalPage();
+      assert(parentNodeWrap.getPage()->getLockStatus() == Page::LockStatus::wlock);
       parentNode->InsertNodeAfter(current_node.getPageId(), min_key, right_node.getPageId());
       updateParentNode(parentNodeWrap, current_node, right_node);
       current_node = parentNodeWrap;
     }
     //    next loop
   }
-  return true;
 }
 
 /*
@@ -222,14 +216,14 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   }
   //  find leaf to delete, store parent on path
 
-  std::stack<NodeWrapType> stack;
+//  std::stack<NodeWrapType> stack;
+  BTreeLockManager bTreeLockManager(this,Mode::remove);
   NodeWrapType current_node = NodeWrapType(root_page_id_, buffer_pool_manager_);
   while (current_node.getIndexPageType() != IndexPageType::LEAF_PAGE) {
     const InternalPage *internalPage = current_node.toInternalPage();
     auto page_id = internalPage->Lookup(key, comparator_);
 
-    //    todo check size
-    stack.push(current_node);
+    bTreeLockManager.addChild(current_node);
     current_node = NodeWrapType(page_id, buffer_pool_manager_);
   }
   //  check leaf size
@@ -248,7 +242,7 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   }
 
   //  handle leaf
-  NodeWrapType parent = stack.top();
+  NodeWrapType parent = bTreeLockManager.top();
   //  try redistribute
   if (hasRightSibling(current_node, parent) && sizeMoreThanMin(getRightSibling(current_node, parent))) {
     auto right = getRightSibling(current_node, parent);
@@ -282,7 +276,7 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   internalPage->SetValueAt(position - 1, leftChildPageId);
 
   while (true) {
-    current_node = stack.top();
+    current_node = bTreeLockManager.top();
     if (current_node.toInternalPage()->GetSize() >= minSize(current_node)) {
       return;
     }
@@ -294,8 +288,8 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
       root_page_id_ = leftChildPageId;
       return;
     }
-    stack.pop();
-    parent = stack.top();
+    bTreeLockManager.pop();
+    parent = bTreeLockManager.top();
 
     if (hasRightSibling(current_node, parent) && sizeMoreThanMin(getRightSibling(current_node, parent))) {
       NodeWrapType right = getRightSibling(current_node, parent);
@@ -846,45 +840,51 @@ void BPlusTree<KeyType, ValueType, KeyComparator>::mergeInternal(BPlusTree::Inte
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 void BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::addChild(BPlusTree::NodeWrapType nodeWrapType) {
-  if (stack.size() > 0) {
-    const NodeWrapType &parent = stack.top();
-    int size = bPlusTree->getSize(parent.toBPlusTreePage());
-    switch (mode) {
-      case Mode::read:
-        parent.getPage()->RUnlatch();
-        //        stack.pop();
-        break;
-      case Mode::remove:
-        if (size > bPlusTree->minSize(parent)) {
-          parent.getPage()->WUnlatch();
-          //          stack.pop();
-        }
-        break;
-      case Mode::insert:
-        if (size < bPlusTree->getMaxSizeByType(parent.toBPlusTreePage())) {
-          parent.getPage()->WUnlatch();
-          //          stack.pop();
-        }
-        break;
-    }
-  }
   if (mode == Mode::read) {
     nodeWrapType.getPage()->RLatch();
   } else {
     nodeWrapType.getPage()->WLatch();
   }
-  stack.push(nodeWrapType);
+
+  if (stack.size() >= 1) {
+    const NodeWrapType &parent = stack.back();
+    int size = bPlusTree->getSize(nodeWrapType.toBPlusTreePage());
+    switch (mode) {
+      case Mode::read:
+        unlockAll();
+        break;
+      case Mode::remove:
+        if (size > bPlusTree->minSize(parent)) {
+          unlockAll();
+        }
+        break;
+      case Mode::insert:
+        if (size < bPlusTree->getMaxSizeByType(nodeWrapType.toBPlusTreePage()) &&
+            parent.getPage()->getLockStatus() == Page::LockStatus::wlock) {
+          unlockAll();
+        }
+        break;
+    }
+    if (parent.getPage()->getLockStatus() == Page::LockStatus::unlock &&
+        parent.getPage()->GetPageId() == bPlusTree->root_page_id_) {
+      lock_root = false;
+      bPlusTree->unlockRoot();
+    }
+  }
+
+  stack.push_back(nodeWrapType);
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::BTreeLockManager(BPlusTree *bPlusTree,
                                                                                  BPlusTree::Mode mode)
-    : bPlusTree(bPlusTree), mode(mode) {}
+    : bPlusTree(bPlusTree), mode(mode), lock_root(true) {
+  bPlusTree->lockRoot();
+}
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 void BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::pop() {
-  NodePageWrap res = stack.top();
-  stack.pop();
+  NodePageWrap res = stack.back();
 
   if (res.getPage()->getLockStatus() != Page::LockStatus::unlock) {
     if (mode == Mode::read) {
@@ -893,18 +893,19 @@ void BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::pop() {
       res.getPage()->WUnlatch();
     }
   }
+  stack.pop_back();
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 typename BPlusTree<KeyType, ValueType, KeyComparator>::NodeWrapType
 BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::top() {
-  return stack.top();
+  return stack.back();
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::~BTreeLockManager() {
   while (stack.size() > 0) {
-    const NodeWrapType &node = stack.top();
+    const NodeWrapType &node = stack.back();
     if (node.getPage()->getLockStatus() != Page::LockStatus::unlock) {
       if (mode == Mode::read) {
         node.getPage()->RUnlatch();
@@ -912,7 +913,44 @@ BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::~BTreeLockManage
         node.getPage()->WUnlatch();
       }
     }
-    stack.pop();
+    stack.pop_back();
+  }
+  if (lock_root) {
+    bPlusTree->unlockRoot();
+  }
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::unlockAll() {
+  for (auto it : stack) {
+    //    NodeWrapType nodeWrapType = *it;
+    if (mode == Mode::read) {
+      unlockPage(it.getPage());
+    } else {
+      unlockPage(it.getPage());
+    }
+  }
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::lockPage(Page *page) {
+  page_locked_set.insert(page);
+  if (mode == Mode::read) {
+    page->RLatch();
+  } else {
+    page->WLatch();
+  }
+}
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void BPlusTree<KeyType, ValueType, KeyComparator>::BTreeLockManager::unlockPage(Page *page) {
+  if (page_locked_set.find(page) == page_locked_set.end()) {
+    return;
+  }
+  page_locked_set.erase(page);
+  if (mode == Mode::read) {
+    page->RLatch();
+  } else {
+    page->WLatch();
   }
 }
 

@@ -19,6 +19,7 @@
 #include "storage/page/b_plus_tree_internal_page.h"
 #include "storage/page/b_plus_tree_leaf_page.h"
 #include <stack>
+#include <set>
 
 namespace bustub {
 
@@ -52,9 +53,14 @@ class BPlusTree {
     virtual ~BTreeLockManager();
 
    private:
+    void lockPage(Page *page);
+    void unlockPage(Page *page);
+    void unlockAll();
     BPlusTree *bPlusTree;
-    std::stack<NodeWrapType> stack;
+    std::vector<NodeWrapType> stack;
+    std::set<Page*> page_locked_set;
     Mode mode;
+    bool lock_root;
   };
 
  public:

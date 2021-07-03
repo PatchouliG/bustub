@@ -159,6 +159,7 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(const KeyType &key, const 
         memmove(&array[i], &array[i + 1], sizeof(MappingType) * (GetSize() - 1 - i));
       }
       IncreaseSize(-1);
+      break;
     }
   }
   return GetSize();
