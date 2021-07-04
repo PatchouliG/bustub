@@ -50,6 +50,7 @@ class BPlusTree {
     void addChild(NodeWrapType nodeWrapType);
     void pop();
     NodeWrapType top();
+    bool isLockRoot() const;
     virtual ~BTreeLockManager();
 
    private:
@@ -153,22 +154,14 @@ class BPlusTree {
   NodeWrapType getLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
   bool hasLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
   bool hasRightSibling(const NodeWrapType &node, const NodeWrapType &parent);
-  //  void MoveFirstToEndOf(NodeWrapType &left, NodeWrapType &right);
-  //  void MoveLastToFrontOf(NodeWrapType &left, NodeWrapType &right);
-  void MoveAllTo(NodeWrapType left, NodeWrapType &right);
-  KeyType firstKey(const NodeWrapType &node);
 
   void MoveFirstToEndOf(LeafPage *left, LeafPage *right, InternalPage *parent);
   void MoveLastToFrontOf(LeafPage *left, LeafPage *right, InternalPage *parent);
-  void MoveLastToFrontOf(InternalPage *left, InternalPage *right, InternalPage *parent);
   //  return parent array postion to child
   int parentPosition(const InternalPage *parent, page_id_t child_page_id);
 
-  //  todo need delete unused page, update next page id
   //  always merge to left ,delete right
   void mergeLeaf(LeafPage *left, LeafPage *right);
-  //  delete index in parent
-  void mergeInternal(InternalPage *left, InternalPage *right, InternalPage *parent);
 
   // member variable
   std::string index_name_;
@@ -177,6 +170,7 @@ class BPlusTree {
   KeyComparator comparator_;
   int leaf_max_size_;
   int internal_max_size_;
+
   std::mutex root_page_lock;
 };
 

@@ -101,6 +101,7 @@ class Page {
   inline void SetLSN(lsn_t lsn) { memcpy(GetData() + OFFSET_LSN, &lsn, sizeof(lsn_t)); }
 
   enum LockStatus { unlock, rlock, wlock };
+//  just for test
   inline LockStatus getLockStatus() { return lockStatus; }
 
  protected:
