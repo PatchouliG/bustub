@@ -46,7 +46,7 @@ INDEXITERATOR_TYPE &INDEXITERATOR_TYPE::operator++() {
     index++;
   } else {
     index = 0;
-    nodePageWrap = NodeWrapType(leafPage->GetNextPageId(), LatchStatus::readL, bufferPoolManager);
+    nodePageWrap = NodeWrapType(leafPage->GetNextPageId(), bufferPoolManager);
   }
   return *this;
 }

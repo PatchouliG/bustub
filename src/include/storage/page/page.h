@@ -15,6 +15,8 @@
 #include <cstring>
 #include <iostream>
 
+#include <optional>
+#include <thread>
 #include "common/config.h"
 #include "common/rwlatch.h"
 
@@ -31,7 +33,10 @@ class Page {
 
  public:
   /** Constructor. Zeros out the page data. */
-  Page() { ResetMemory(); }
+  Page() {
+    ResetMemory();
+    lockStatus = unlock;
+  }
 
   /** Default destructor. */
   ~Page() = default;
@@ -49,22 +54,55 @@ class Page {
   inline bool IsDirty() { return is_dirty_; }
 
   /** Acquire the page write latch. */
-  inline void WLatch() { rwlatch_.WLock(); }
+  inline void WLatch() {
+    rwlatch_.WLock();
+//    for debug
+    {
+      assert(!tid.has_value());
+      assert(lockStatus == unlock);
+      tid = std::this_thread::get_id();
+    }
+    lockStatus = wlock;
+  }
 
-  /** Release the page write latch. */
-  inline void WUnlatch() { rwlatch_.WUnlock(); }
+  /** Release the page write latch. */ inline void WUnlatch() {
+//    for debug
+    {
+      assert(tid.has_value());
+      //    if (tid.value() != std::this_thread::get_id()) {
+      //      return;
+      //    }
+
+      assert(tid.value() == std::this_thread::get_id());
+      assert(lockStatus == wlock);
+      assert(lockStatus == wlock && lockStatus);
+      tid.reset();
+    }
+    rwlatch_.WUnlock();
+    lockStatus = unlock;
+  }
 
   /** Acquire the page read latch. */
-  inline void RLatch() { rwlatch_.RLock(); }
+  inline void RLatch() {
+    rwlatch_.RLock();
+    lockStatus = rlock;
+  }
 
   /** Release the page read latch. */
-  inline void RUnlatch() { rwlatch_.RUnlock(); }
+  inline void RUnlatch() {
+    rwlatch_.RUnlock();
+    lockStatus = unlock;
+  }
 
   /** @return the page LSN. */
   inline lsn_t GetLSN() { return *reinterpret_cast<lsn_t *>(GetData() + OFFSET_LSN); }
 
   /** Sets the page LSN. */
   inline void SetLSN(lsn_t lsn) { memcpy(GetData() + OFFSET_LSN, &lsn, sizeof(lsn_t)); }
+
+  enum LockStatus { unlock, rlock, wlock };
+//  just for test
+  inline LockStatus getLockStatus() { return lockStatus; }
 
  protected:
   static_assert(sizeof(page_id_t) == 4);
@@ -88,6 +126,10 @@ class Page {
   bool is_dirty_ = false;
   /** Page latch. */
   ReaderWriterLatch rwlatch_;
+  //  for test
+  LockStatus lockStatus;
+//  for debug
+  std::optional<std::thread::id> tid;
 };
 
 }  // namespace bustub

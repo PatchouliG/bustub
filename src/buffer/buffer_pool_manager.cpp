@@ -35,6 +35,7 @@ BufferPoolManager::~BufferPoolManager() {
 }
 
 Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
+  std::lock_guard<std::recursive_mutex> guard(latch_);
   // 1.     Search the page table for the requested page (P).
   auto res = page_table_.find(page_id);
   frame_id_t frame_id;
@@ -78,6 +79,8 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
 }
 
 bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
+  std::lock_guard<std::recursive_mutex> guard(latch_);
+
   auto res = page_table_.find(page_id);
   if (res == page_table_.end()) {
     return false;
@@ -94,6 +97,7 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
 }
 
 bool BufferPoolManager::FlushPageImpl(page_id_t page_id) {
+  std::lock_guard<std::recursive_mutex> guard(latch_);
   // Make sure you call DiskManager::WritePage!
   auto find_res = page_table_.find(page_id);
   if (find_res == page_table_.end()) {
@@ -106,6 +110,7 @@ bool BufferPoolManager::FlushPageImpl(page_id_t page_id) {
 }
 
 Page *BufferPoolManager::NewPageImpl(page_id_t *page_id) {
+  std::lock_guard<std::recursive_mutex> guard(latch_);
   // 0.   Make sure you call DiskManager::AllocatePage!
   *page_id = disk_manager_->AllocatePage();
   // 1.   If all the pages in the buffer pool are pinned, return nullptr.
@@ -146,6 +151,7 @@ Page *BufferPoolManager::NewPageImpl(page_id_t *page_id) {
 }
 
 bool BufferPoolManager::DeletePageImpl(page_id_t page_id) {
+  std::lock_guard<std::recursive_mutex> guard(latch_);
   // 0.   Make sure you call DiskManager::DeallocatePage!
   disk_manager_->DeallocatePage(page_id);
   // 1.   Search the page table for the requested page (P).
@@ -167,6 +173,7 @@ bool BufferPoolManager::DeletePageImpl(page_id_t page_id) {
 }
 
 void BufferPoolManager::FlushAllPagesImpl() {
+  std::lock_guard<std::recursive_mutex> guard(latch_);
   for (size_t i = 0; i < pool_size_; ++i) {
     auto &p = pages_[i];
     assert(p.GetPinCount() == 0);

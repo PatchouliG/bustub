@@ -18,6 +18,8 @@
 #include "storage/index/index_iterator.h"
 #include "storage/page/b_plus_tree_internal_page.h"
 #include "storage/page/b_plus_tree_leaf_page.h"
+#include <stack>
+#include <set>
 
 namespace bustub {
 
@@ -40,32 +42,53 @@ class BPlusTree {
   using NodeWrapType = NodePageWrap<KeyType, ValueType, KeyComparator>;
 
  public:
+  enum class Mode { read, insert, remove };
+
+  class BTreeLockManager {
+   public:
+    BTreeLockManager(BPlusTree *bPlusTree, Mode mode);
+    void addChild(NodeWrapType nodeWrapType);
+    void pop();
+    NodeWrapType top();
+    bool isLockRoot() const;
+    virtual ~BTreeLockManager();
+
+   private:
+    void lockPage(Page *page);
+    void unlockPage(Page *page);
+    void unlockAll();
+    BPlusTree *bPlusTree;
+    std::vector<NodeWrapType> stack;
+    std::set<Page*> page_locked_set;
+    Mode mode;
+    bool lock_root;
+  };
+
+ public:
   explicit BPlusTree(std::string name, BufferPoolManager *buffer_pool_manager, const KeyComparator &comparator,
                      int leaf_max_size = LEAF_PAGE_SIZE, int internal_max_size = INTERNAL_PAGE_SIZE);
 
   // Returns true if this B+ tree has no keys and values.
   bool IsEmpty() const;
 
+  void lockRoot();
+  void unlockRoot();
+
   // Insert a key-value pair into this B+ tree.
-  //  need thread safe
   bool Insert(const KeyType &key, const ValueType &value, Transaction *transaction = nullptr);
 
   // Remove a key and its value from this B+ tree.
-  //  need thread safe
   void Remove(const KeyType &key, Transaction *transaction = nullptr);
 
   // return the value associated with a given key
-  //  need thread safe
   bool GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction = nullptr);
 
   // index iterator
-  //  need thread safe
   INDEXITERATOR_TYPE begin();
-  //  need thread safe
   INDEXITERATOR_TYPE Begin(const KeyType &key);
-  //  need thread safe
   INDEXITERATOR_TYPE end();
 
+  bool sizeMoreThanMin(const NodeWrapType &node);
   void Print(BufferPoolManager *bpm) {
     ToString(reinterpret_cast<BPlusTreePage *>(bpm->FetchPage(root_page_id_)->GetData()), bpm);
   }
@@ -127,27 +150,18 @@ class BPlusTree {
   NodeWrapType findLeaf(const KeyType &key);
 
   int minSize(const NodeWrapType &node);
-  bool sizeMoreThanMin(const NodeWrapType &node);
   NodeWrapType getRightSibling(const NodeWrapType &node, const NodeWrapType &parent);
   NodeWrapType getLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
   bool hasLeftSibling(const NodeWrapType &node, const NodeWrapType &parent);
   bool hasRightSibling(const NodeWrapType &node, const NodeWrapType &parent);
-  //  void MoveFirstToEndOf(NodeWrapType &left, NodeWrapType &right);
-  //  void MoveLastToFrontOf(NodeWrapType &left, NodeWrapType &right);
-  void MoveAllTo(NodeWrapType left, NodeWrapType &right);
-  KeyType firstKey(const NodeWrapType &node);
 
   void MoveFirstToEndOf(LeafPage *left, LeafPage *right, InternalPage *parent);
   void MoveLastToFrontOf(LeafPage *left, LeafPage *right, InternalPage *parent);
-  void MoveLastToFrontOf(InternalPage *left, InternalPage *right, InternalPage *parent);
   //  return parent array postion to child
   int parentPosition(const InternalPage *parent, page_id_t child_page_id);
 
-  //  todo need delete unused page, update next page id
   //  always merge to left ,delete right
   void mergeLeaf(LeafPage *left, LeafPage *right);
-  //  delete index in parent
-  void mergeInternal(InternalPage *left, InternalPage *right, InternalPage *parent);
 
   // member variable
   std::string index_name_;
@@ -156,6 +170,8 @@ class BPlusTree {
   KeyComparator comparator_;
   int leaf_max_size_;
   int internal_max_size_;
+
+  std::mutex root_page_lock;
 };
 
 }  // namespace bustub
